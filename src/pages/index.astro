@@ -1,0 +1,129 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PainFinder from '../components/app/PainFinder';
+import RegionCard from '../components/RegionCard.astro';
+import { regions } from '../data/content';
+---
+
+<BaseLayout title="StretchesFor" description="A private, no-login guide to possible pain patterns, safety screening, and gentle movement routines.">
+  <section class="relative overflow-hidden border-b border-line">
+    <div class="container-shell grid min-h-[42rem] items-center gap-14 py-20 lg:grid-cols-[0.92fr_1.08fr] lg:py-28">
+      <div>
+        <div class="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-muted">
+          <span class="size-1.5 rounded-full bg-success"></span>
+          Private by design · no account
+        </div>
+        <h1 class="mt-7 max-w-4xl text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.06em] sm:text-6xl lg:text-7xl">A more believable way to begin moving again.</h1>
+        <p class="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">Locate pain on a realistic interactive body, complete a focused safety screen, and follow real exercise demonstrations with optional voice coaching.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="#pain-finder" class="inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85">Find my starting point</a>
+          <a href="/medical-disclaimer" class="inline-flex min-h-12 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read the safety approach</a>
+        </div>
+        <div class="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-xs text-subtle">
+          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> Temporary browser state</span>
+          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> No health data stored</span>
+          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> Works without a backend</span>
+        </div>
+      </div>
+
+      <div class="surface-card relative mx-auto w-full max-w-2xl overflow-hidden p-3 shadow-[0_40px_100px_-50px_rgba(0,0,0,.8)]" aria-label="Preview of the guided recovery experience">
+        <div class="flex items-center justify-between border-b border-line px-3 py-3">
+          <div class="flex items-center gap-2">
+            <span class="size-2 rounded-full bg-success"></span>
+            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Guided session</span>
+          </div>
+          <span class="rounded-md border border-line bg-canvas px-2.5 py-1 text-xs font-medium text-muted">Local only</span>
+        </div>
+        <div class="grid gap-3 p-2 sm:grid-cols-[0.9fr_1.1fr]">
+          <div class="rounded-xl border border-line bg-canvas p-5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-medium text-subtle">Pain finder</span>
+              <span class="text-xs font-semibold text-brand">Model viewer</span>
+            </div>
+            <div class="relative mx-auto mt-6 grid aspect-square max-w-48 place-items-center">
+              <div class="absolute inset-3 rounded-full border border-line"></div>
+              <div class="absolute inset-8 rounded-full border border-line"></div>
+              <div class="absolute inset-14 rounded-full border border-brand/50"></div>
+              <div class="grid size-14 place-items-center rounded-full border border-brand bg-brand/12 text-brand shadow-[0_0_0_12px_color-mix(in_srgb,var(--sf-brand)_8%,transparent)]">
+                <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>
+              </div>
+            </div>
+            <p class="mt-4 text-center text-sm font-semibold">Rotate. Inspect. Select.</p>
+            <p class="mt-1 text-center text-xs leading-5 text-subtle">Drag, pinch, zoom, pan, or use quick views.</p>
+          </div>
+          <div class="grid gap-3">
+            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
+              <div class="flex items-center justify-between gap-4">
+                <div><p class="text-xs text-subtle">01 · Locate</p><p class="mt-1 text-sm font-semibold">Lower back selected</p></div>
+                <span class="grid size-9 place-items-center rounded-lg border border-brand/40 bg-brand/10 text-brand" aria-hidden="true">✓</span>
+              </div>
+            </div>
+            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
+              <div class="flex items-center justify-between gap-4">
+                <div><p class="text-xs text-subtle">02 · Screen</p><p class="mt-1 text-sm font-semibold">1 question at a time</p></div>
+                <span class="text-xs font-medium tabular-nums text-muted">2 / 5</span>
+              </div>
+              <div class="mt-4 grid grid-cols-5 gap-1"><span class="h-1 rounded-full bg-brand"></span><span class="h-1 rounded-full bg-brand"></span><span class="h-1 rounded-full bg-line"></span><span class="h-1 rounded-full bg-line"></span><span class="h-1 rounded-full bg-line"></span></div>
+            </div>
+            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
+              <div class="flex items-center justify-between gap-4">
+                <div><p class="text-xs text-subtle">03 · Move</p><p class="mt-1 text-sm font-semibold">GIF & voice guidance</p></div>
+                <span class="font-mono text-lg font-semibold tabular-nums">0:30</span>
+              </div>
+              <div class="mt-4 flex items-center gap-2 text-xs text-muted"><span class="grid size-7 place-items-center rounded-md bg-brand text-white" aria-hidden="true">▶</span><span>Start · Move · Return</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-4 border-t border-line px-4 py-3 text-xs text-subtle"><span>Nothing leaves this page</span><span class="text-success">Session private</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="container-shell py-20 sm:py-28">
+    <div class="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]">
+      <div>
+        <p class="text-sm font-semibold text-brand">A calmer flow</p>
+        <h2 class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Safety before stretching.</h2>
+        <p class="mt-4 max-w-md text-pretty leading-7 text-muted">A focused path from “where does it hurt?” to the safest reasonable next step.</p>
+      </div>
+      <div class="grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2">
+        {[
+          ['01', 'Locate precisely', 'Rotate a neutral 3D body and choose a highlighted pain region.'],
+          ['02', 'Compare patterns', 'Review clear, non-diagnostic descriptions and choose the closest fit.'],
+          ['03', 'Screen for safety', 'Answer 5 focused questions, one at a time, with optional voice.'],
+          ['04', 'Follow the right path', 'Begin guided motion, seek an evaluation, or act on an urgent warning.'],
+        ].map(([number, title, copy]) => (
+          <div class="bg-surface p-6">
+            <p class="text-xs font-semibold tabular-nums text-brand">{number}</p>
+            <h3 class="mt-5 font-semibold">{title}</h3>
+            <p class="mt-2 text-sm leading-6 text-muted">{copy}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section id="pain-finder" class="scroll-mt-20 border-y border-line bg-surface-raised/20 py-12 sm:py-20">
+    <div class="container-shell"><PainFinder client:visible={{ rootMargin: '400px' }} /></div>
+  </section>
+
+  <section class="container-shell py-20 sm:py-28">
+    <div class="max-w-2xl">
+      <p class="text-sm font-semibold text-brand">Explore by area</p>
+      <h2 class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">14 clear regions, without overwhelming anatomy.</h2>
+      <p class="mt-4 text-pretty leading-7 text-muted">Each guide explains commonly associated patterns, useful context, and the warning signs that change the next step.</p>
+    </div>
+    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{regions.map((region) => <RegionCard region={region} />)}</div>
+  </section>
+
+  <section class="container-shell pb-8">
+    <div class="surface-card grid gap-8 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div>
+        <p class="text-sm font-semibold text-brand">No hidden health profile</p>
+        <h2 class="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em]">Your answers disappear when this page closes.</h2>
+        <p class="mt-3 max-w-2xl text-pretty leading-7 text-muted">StretchesFor does not create an account, store a history, or send questionnaire answers to a server. Voice guidance uses your browser’s built-in speech engine.</p>
+      </div>
+      <a href="/privacy" class="inline-flex min-h-12 items-center justify-center rounded-lg border border-line bg-canvas px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read privacy details</a>
+    </div>
+  </section>
+</BaseLayout>

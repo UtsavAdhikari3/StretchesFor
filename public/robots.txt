@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stretchesfor.com/sitemap-index.xml

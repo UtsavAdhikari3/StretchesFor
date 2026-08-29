@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#010102"/>
+  <path d="M0 140H1200M0 315H1200M0 490H1200M260 0V630M600 0V630M940 0V630" stroke="#17181a"/>
+  <rect x="84" y="80" width="62" height="62" rx="16" fill="#17181a" stroke="#5e6ad2"/>
+  <path d="M106 96c8 8 11 21 9 38m17-38c-8 8-11 21-9 38M104 111h30M104 127h30" fill="none" stroke="#6d78dc" stroke-width="4"/>
+  <text x="84" y="245" fill="#f7f8f8" font-family="Inter,Arial,sans-serif" font-size="78" font-weight="600" letter-spacing="-3">Find a safer place to start.</text>
+  <text x="84" y="330" fill="#8a8f98" font-family="Inter,Arial,sans-serif" font-size="34">Body-area guidance, safety screening, and gentle movement.</text>
+  <text x="84" y="530" fill="#6d78dc" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600">stretchesfor.com</text>
+</svg>

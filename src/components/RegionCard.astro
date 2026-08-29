@@ -1,0 +1,13 @@
+---
+import type { BodyRegion } from '../data/types';
+const { region } = Astro.props as { region: BodyRegion };
+---
+<a href={`/body/${region.id}`} class="group surface-card flex min-h-40 flex-col justify-between p-5 transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised">
+  <span class="grid size-9 place-items-center rounded-lg border border-line bg-canvas text-brand" aria-hidden="true">
+    <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+  </span>
+  <div class="mt-6">
+    <h3 class="font-semibold tracking-[-0.02em]">{region.name}</h3>
+    <p class="mt-1 text-sm leading-6 text-muted">{region.summary}</p>
+  </div>
+</a>

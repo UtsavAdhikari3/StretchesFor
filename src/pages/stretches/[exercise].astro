@@ -1,0 +1,18 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import ExercisePlayer from '../../components/app/ExercisePlayer';
+import { getRegion } from '../../data/content';
+import { exercises, routines } from '../../data/exercises';
+import type { BodyRegion, Exercise, Routine } from '../../data/types';
+export const getStaticPaths = (() => exercises.map((exercise) => { const routine = routines.find((item) => item.exerciseIds.includes(exercise.id))!; return { params: { exercise: exercise.id }, props: { exercise, routine, region: getRegion(exercise.regionId) } }; })) satisfies GetStaticPaths;
+const { exercise, routine, region } = Astro.props as { exercise: Exercise; routine: Routine; region: BodyRegion };
+const structuredData = { '@context': 'https://schema.org', '@type': 'HowTo', name: exercise.name, step: exercise.instructions.map((text, index) => ({ '@type': 'HowToStep', position: index + 1, text })) };
+---
+<BaseLayout title={`${exercise.name} guide`} description={`Learn ${exercise.name} with an ExerciseDB demonstration, timer, dosage, common mistakes, and safer variations.`} canonicalPath={`/stretches/${exercise.id}`}>
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: region.name, href: `/body/${region.id}` }, { label: exercise.name }]} /><div class="mt-12 max-w-3xl"><p class="text-sm font-semibold text-brand">Exercise guide · {region.name}</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">{exercise.name}</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">A guided movement from the {routine.name.toLowerCase()} routine. Keep the sensation mild and stop if symptoms worsen.</p></div></section>
+  <section class="border-y border-line bg-surface-raised/30 py-12 sm:py-16"><div class="container-shell"><ExercisePlayer routine={routine} exercises={exercises} initialExerciseId={exercise.id} client:visible={{ rootMargin: '300px' }} /></div></section>
+  <section class="container-shell py-16"><div class="grid gap-5 md:grid-cols-2"><div class="surface-card p-6"><h2 class="text-xl font-semibold">Expected sensation</h2><p class="mt-3 leading-7 text-muted">A mild, controlled stretch or muscular effort around the {exercise.feltArea.toLowerCase()}. Sharp, spreading, electrical, or worsening pain is not the target.</p></div><div class="surface-card p-6"><h2 class="text-xl font-semibold">Easier option</h2><p class="mt-3 leading-7 text-muted">{exercise.easier}</p></div></div></section>
+</BaseLayout>

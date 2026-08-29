@@ -1,0 +1,17 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import PatternCard from '../../components/PatternCard.astro';
+import { patterns, regions } from '../../data/content';
+import type { BodyRegion, PainPattern } from '../../data/types';
+export const getStaticPaths = (() => regions.map((region) => ({ params: { region: region.id }, props: { region, regionPatterns: patterns.filter((pattern) => pattern.regionId === region.id) } }))) satisfies GetStaticPaths;
+const { region, regionPatterns } = Astro.props as { region: BodyRegion; regionPatterns: PainPattern[] };
+const structuredData = { '@context': 'https://schema.org', '@type': 'WebPage', name: `${region.name} pain patterns`, description: region.seoDescription };
+---
+<BaseLayout title={`${region.name} pain patterns`} description={region.seoDescription} canonicalPath={`/body/${region.id}`}>
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: region.name }]} /><div class="mt-12 max-w-3xl"><p class="text-sm font-semibold text-brand">Body guide</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">{region.name} pain: possible patterns</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">{region.summary} These guides organise common symptom patterns without claiming to identify the cause.</p><a href="/#pain-finder" class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas hover:opacity-85">Start the guided check</a></div></section>
+  <section class="border-y border-line bg-surface-raised/30 py-16"><div class="container-shell"><div class="mb-8 max-w-2xl"><h2 class="text-3xl font-semibold tracking-[-0.04em]">Possible reasons for pain here</h2><p class="mt-3 leading-7 text-muted">Symptoms commonly associated with these patterns can overlap. A physical examination may be needed to tell them apart.</p></div><div class="grid gap-5 lg:grid-cols-2">{regionPatterns.map((pattern) => <PatternCard pattern={pattern} />)}</div></div></section>
+  <section class="container-shell py-16"><div class="surface-card max-w-3xl border-warning/40 bg-warning/5 p-6 sm:p-8"><h2 class="text-xl font-semibold">When not to stretch</h2><p class="mt-3 leading-7 text-muted">Do not use exercise to delay care for severe or rapidly worsening pain, major trauma, fever or feeling seriously unwell, unexplained swelling, new weakness or numbness, breathing difficulty, or loss of normal function.</p><a href="/medical-disclaimer" class="mt-5 inline-flex min-h-11 items-center font-semibold text-brand hover:text-brand-hover">Read the complete safety approach →</a></div></section>
+</BaseLayout>

@@ -1,0 +1,16 @@
+---
+import type { PainPattern } from '../data/types';
+const { pattern, compact = false } = Astro.props as { pattern: PainPattern; compact?: boolean };
+---
+<article class="surface-card flex h-full flex-col p-5 sm:p-6">
+  <p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Possible pattern</p>
+  <h3 class="mt-3 text-xl font-semibold tracking-[-0.03em]">{pattern.name}</h3>
+  <p class="mt-3 text-sm leading-6 text-muted">{pattern.summary}</p>
+  {!compact && (
+    <div class="mt-5 grid gap-4 border-t border-line pt-5 text-sm sm:grid-cols-2">
+      <div><p class="font-medium">Commonly associated</p><ul class="mt-2 grid gap-1 text-muted">{pattern.symptoms.map((s) => <li>• {s}</li>)}</ul></div>
+      <div><p class="font-medium">Common triggers</p><ul class="mt-2 grid gap-1 text-muted">{pattern.triggers.map((s) => <li>• {s}</li>)}</ul></div>
+    </div>
+  )}
+  <a href={`/patterns/${pattern.id}`} class="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-canvas px-4 text-sm font-semibold transition-[border-color,background-color] duration-200 hover:border-line-strong hover:bg-surface-raised">Read pattern guide</a>
+</article>
