@@ -37,7 +37,7 @@ export interface PainPattern {
 
 export interface Exercise {
   id: string;
-  externalExerciseId?: string;
+  sourceRef: ExerciseSourceReference;
   name: string;
   regionId: string;
   feltArea: string;
@@ -50,6 +50,38 @@ export interface Exercise {
   easier: string;
   expectedSensation: string;
   stopConditions: string[];
+}
+
+export interface ExerciseSourceReference {
+  wgerId: string | null;
+  exerciseDbId: string | null;
+  acceptedExternalNames: {
+    wger: string[];
+    exerciseDb: string[];
+  };
+  /**
+   * First-party media is enabled only after the immutable files and clinical
+   * approval metadata are complete. A reviewed `null` is intentional: it
+   * means no approved local asset is currently allowed to reach the player.
+   */
+  localAsset: LocalExerciseAsset | null;
+}
+
+export interface LocalExerciseAsset {
+  approved: true;
+  version: `v${number}`;
+  demonstrationPath: `/${string}.mp4`;
+  posterPath: `/${string}.webp`;
+  width: 960;
+  height: 540;
+  durationSeconds: number;
+  checksums: {
+    demonstrationSha256: string;
+    posterSha256: string;
+  };
+  approvalDate: `${number}-${number}-${number}`;
+  reviewerRole: string;
+  checklistVersion: string;
 }
 
 export interface Routine {

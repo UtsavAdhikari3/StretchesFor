@@ -3,6 +3,7 @@ import type { Exercise, Routine } from '../../data/types';
 import ExerciseMedia from './ExerciseMedia';
 import VoiceToggle from './VoiceToggle';
 import { useSpeechGuidance } from './useSpeechGuidance';
+import { getExercisePath } from '../../lib/exerciseUrls';
 
 interface Props {
   routine: Routine;
@@ -36,15 +37,28 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
   }, [current]);
 
   useEffect(() => {
-    if (!activeVoice || !current) return;
-    speech.speak(`${current.name}. ${current.instructions.join(' ')} ${current.dose}. Stop if pain worsens.`);
-  }, [activeVoice, current?.id, speech.speak]);
-
-  useEffect(() => {
     if (!running) return;
     const timer = window.setInterval(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [running]);
+
+  useEffect(() => {
+    if (!running || remaining < 1 || remaining > 5) return;
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = 880;
+    oscillator.type = 'sine';
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.11);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.12);
+    oscillator.addEventListener('ended', () => void context.close(), { once: true });
+  }, [remaining, running]);
 
   useEffect(() => {
     if (!current || !running || halfwayAnnounced.current || remaining !== Math.floor(current.seconds / 2)) return;
@@ -71,7 +85,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       halfwayAnnounced.current = false;
     }
     setRunning(true);
-    if (activeVoice) speech.speak(`Timer started. ${current.seconds} seconds. Keep breathing and stop if pain worsens.`);
+    if (activeVoice) speech.speak(`${current.name}. ${current.instructions.join(' ')} ${current.dose}. Timer started. Keep breathing and stop if pain worsens.`);
   };
 
   const chooseSide = (nextSide: 'left' | 'right') => {
@@ -148,7 +162,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       </div>
 
       <div className="border-t border-danger/30 bg-danger/5 px-5 py-4 text-sm leading-6 text-muted sm:px-7"><strong className="text-danger">Stop if pain worsens.</strong> {current.stopConditions.join('. ')}.</div>
-      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">Previous</button><a href={`/stretches/${current.id}`} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">Open exercise guide</a><button type="button" disabled={index === ordered.length - 1} onClick={() => goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">Skip to next</button></footer>
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">Previous</button><a href={getExercisePath(current.id)} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">Open exercise guide</a><button type="button" disabled={index === ordered.length - 1} onClick={() => goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">Skip to next</button></footer>
     </section>
   );
 }

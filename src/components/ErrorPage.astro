@@ -1,0 +1,54 @@
+---
+interface Action {
+  href: string;
+  label: string;
+}
+
+interface Props {
+  code: '404' | '500';
+  eyebrow: string;
+  title: string;
+  description: string;
+  primaryAction: Action;
+  secondaryAction: Action;
+}
+
+const { code, eyebrow, title, description, primaryAction, secondaryAction } = Astro.props;
+---
+
+<section class="container-shell grid min-h-[60vh] place-items-center py-16 sm:py-24">
+  <div class="surface-card relative w-full max-w-3xl overflow-hidden px-6 py-12 text-center sm:px-12 sm:py-16">
+    <span
+      class="pointer-events-none absolute -right-5 -top-14 select-none text-[10rem] font-semibold leading-none tracking-[-0.08em] text-line/45 sm:text-[13rem]"
+      aria-hidden="true"
+    >
+      {code}
+    </span>
+
+    <div class="relative">
+      <p class="text-sm font-semibold tabular-nums text-brand">{code} · {eyebrow}</p>
+      <h1 class="mx-auto mt-4 max-w-2xl text-balance text-4xl font-semibold leading-tight tracking-[-0.05em] sm:text-6xl">
+        {title}
+      </h1>
+      <p class="mx-auto mt-5 max-w-xl text-pretty text-lg leading-8 text-muted">{description}</p>
+
+      <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <a
+          href={primaryAction.href}
+          class="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85"
+        >
+          {primaryAction.label}
+          <svg viewBox="0 0 20 20" class="size-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path d="M4 10h12m-4-4 4 4-4 4"></path>
+          </svg>
+        </a>
+        <a
+          href={secondaryAction.href}
+          class="inline-flex min-h-12 items-center justify-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised"
+        >
+          {secondaryAction.label}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

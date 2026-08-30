@@ -1,0 +1,61 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import ExerciseMedia from '../../components/app/ExerciseMedia';
+import { exercises } from '../../data/exercises';
+import { getExerciseIllustration } from '../../data/exerciseIllustrations';
+import { getExerciseFlowHref, getExerciseSeo } from '../../data/seoContent';
+import type { Exercise } from '../../data/types';
+import { getExercisePath, getExerciseSlug } from '../../lib/exerciseUrls';
+
+export const getStaticPaths = (() => exercises.map((exercise) => ({ params: { exercise: getExerciseSlug(exercise.id) }, props: { exercise } }))) satisfies GetStaticPaths;
+
+const { exercise } = Astro.props as { exercise: Exercise };
+const { region, routine, targets, conditions, relatedExercises } = getExerciseSeo(exercise.id)!;
+const illustration = getExerciseIllustration(exercise.id);
+const canonicalPath = getExercisePath(exercise.id);
+const startHref = getExerciseFlowHref(exercise.id);
+const description = `Learn how to do ${exercise.name}: step-by-step instructions, ${exercise.dose.toLowerCase()}, targeted muscles, common mistakes, easier options, and safety notes.`;
+const pageUrl = new URL(canonicalPath, Astro.site).toString();
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'HowTo', '@id': `${pageUrl}#howto`, name: exercise.name, description, url: pageUrl, totalTime: `PT${exercise.seconds}S`, image: illustration ? new URL(illustration.src, Astro.site).toString() : undefined, step: exercise.instructions.map((text, index) => ({ '@type': 'HowToStep', position: index + 1, name: `Step ${index + 1}`, text })) },
+    { '@type': 'MedicalWebPage', '@id': `${pageUrl}#webpage`, url: pageUrl, name: `${exercise.name}: How to Do It Safely`, description, inLanguage: 'en', mainEntity: { '@id': `${pageUrl}#howto` }, about: conditions.map((condition) => ({ '@type': 'MedicalCondition', name: condition.name, url: new URL(`/${condition.slug}/`, Astro.site).toString() })) },
+    { '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: new URL('/', Astro.site).toString() },
+      { '@type': 'ListItem', position: 2, name: 'Exercises', item: new URL('/exercises/', Astro.site).toString() },
+      { '@type': 'ListItem', position: 3, name: exercise.name, item: pageUrl },
+    ] },
+  ],
+};
+---
+
+<BaseLayout title={`${exercise.name}: Instructions, Benefits & Safety`} description={description} canonicalPath={canonicalPath} image={illustration?.src} imageAlt={illustration?.alt ?? `${exercise.name} exercise guide`} imageWidth={illustration?.width} imageHeight={illustration?.height} ogType="article">
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  {!illustration && <><link slot="head" rel="preconnect" href="https://wger.de" crossorigin="anonymous" /><link slot="head" rel="preconnect" href="https://oss.exercisedb.dev" crossorigin="anonymous" /><link slot="head" rel="preconnect" href="https://static.exercisedb.dev" crossorigin="anonymous" /></>}
+  <article>
+    <header class="container-shell py-10 sm:py-16">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Exercises', href: '/exercises/' }, { label: exercise.name }]} />
+      <div class="mt-10 max-w-4xl"><p class="text-sm font-semibold text-brand">{region?.name} exercise guide</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.055em] sm:text-6xl lg:text-7xl">{exercise.name}</h1><p class="mt-6 max-w-3xl text-pretty text-lg leading-8 text-muted">{exercise.direction}. This guide covers the setup, suggested dose, muscles and body areas targeted, common mistakes, and a safer way to open the existing guided player at this exercise.</p><div class="mt-8 flex flex-wrap gap-3"><a href={startHref} class="inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas hover:opacity-85">Start this stretch</a><a href={`/body/${exercise.regionId}/`} class="inline-flex min-h-12 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold hover:border-line-strong hover:bg-surface-raised">Explore {region?.name.toLowerCase()} pain</a></div></div>
+    </header>
+
+    <section class="border-y border-line bg-surface-raised/25 py-12 sm:py-16" aria-labelledby="demonstration-heading">
+      <div class="container-shell grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,.9fr)] lg:items-start">
+        <div class="min-w-0"><h2 id="demonstration-heading" class="sr-only">{exercise.name} demonstration</h2><ExerciseMedia exercise={exercise} client:visible={{ rootMargin: '400px' }} /></div>
+        <div><div class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line"><div class="bg-surface p-4"><p class="text-xs text-subtle">Suggested dose</p><p class="mt-1 text-sm font-semibold">{exercise.dose}</p></div><div class="bg-surface p-4"><p class="text-xs text-subtle">Target area</p><p class="mt-1 text-sm font-semibold">{exercise.feltArea}</p></div></div><h2 class="mt-8 text-2xl font-semibold tracking-[-0.035em]">How to do {exercise.name}</h2><ol class="mt-5 grid gap-4">{exercise.instructions.map((instruction, index) => <li class="flex gap-3 leading-7 text-muted"><span class="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-surface text-xs font-semibold text-ink">{index + 1}</span><span>{instruction}</span></li>)}</ol>{exercise.bilateral && <p class="mt-5 rounded-xl border border-line bg-surface p-4 text-sm leading-6 text-muted"><strong class="text-ink">Both sides:</strong> Complete one comfortable side, reset your position, then repeat on the other. Do not force both sides to match.</p>}<a href={startHref} class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover">Open in guided player</a></div>
+      </div>
+    </section>
+
+    <div class="container-shell py-14 sm:py-20"><div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div>
+        <section class="grid gap-5 sm:grid-cols-2" aria-label="Exercise details"><div class="surface-card p-6"><h2 class="text-xl font-semibold">Muscles and areas targeted</h2><ul class="mt-4 grid gap-2 text-muted">{targets.map((target) => <li>• {target}</li>)}</ul></div><div class="surface-card p-6"><h2 class="text-xl font-semibold">What it may help with</h2><p class="mt-3 leading-7 text-muted">This movement may provide a gentle option for stiffness or load-related discomfort around the {exercise.feltArea.toLowerCase()}. It does not diagnose or treat every cause.</p></div></section>
+        <section class="mt-12" aria-labelledby="mistakes-heading"><h2 id="mistakes-heading" class="text-2xl font-semibold tracking-[-0.035em]">Common mistakes</h2><ul class="mt-5 grid gap-3 text-muted">{exercise.mistakes.map((mistake) => <li class="flex gap-3"><span class="font-bold text-danger" aria-hidden="true">×</span><span>{mistake}</span></li>)}</ul><div class="mt-6 rounded-xl border border-line bg-surface p-5"><h3 class="font-semibold">Make it easier</h3><p class="mt-2 leading-7 text-muted">{exercise.easier}</p></div></section>
+        <section class="mt-12 rounded-2xl border border-warning/40 bg-warning/5 p-6 sm:p-8" aria-labelledby="exercise-safety-heading"><p class="text-sm font-semibold text-warning">Safety notes</p><h2 id="exercise-safety-heading" class="mt-2 text-2xl font-semibold tracking-[-0.035em]">Stop if symptoms worsen</h2><p class="mt-4 leading-7 text-muted">Aim for {exercise.expectedSensation.toLowerCase()} Stop and seek appropriate advice if:</p><ul class="mt-4 grid gap-3 text-muted">{exercise.stopConditions.map((condition) => <li class="flex gap-3"><span class="font-bold text-warning" aria-hidden="true">!</span><span>{condition}</span></li>)}</ul><p class="mt-5 text-sm leading-6 text-subtle">Do not use this exercise to delay care after a major injury or for severe, unexplained, or rapidly worsening symptoms.</p></section>
+        <section class="mt-12" aria-labelledby="related-exercises-heading"><h2 id="related-exercises-heading" class="text-2xl font-semibold tracking-[-0.035em]">Related exercises</h2><div class="mt-5 grid gap-4 sm:grid-cols-2">{relatedExercises.map((related) => <a href={getExercisePath(related.id)} class="surface-card group p-5 hover:border-line-strong"><p class="text-xs font-semibold uppercase tracking-[0.1em] text-brand">Related movement</p><h3 class="mt-2 font-semibold group-hover:text-brand">{related.name}</h3><p class="mt-2 text-sm text-muted">{related.dose}</p></a>)}</div></section>
+      </div>
+      <aside aria-labelledby="condition-links-heading"><div class="surface-card p-5 lg:sticky lg:top-24"><h2 id="condition-links-heading" class="font-semibold">Relevant condition guides</h2><p class="mt-2 text-sm leading-6 text-muted">Learn when this exercise may fit into a broader movement plan.</p><ul class="mt-5 grid gap-3">{conditions.map((condition) => <li><a href={`/${condition.slug}/`} class="text-sm font-semibold text-brand hover:text-brand-hover">{condition.title} →</a></li>)}</ul><hr class="my-5 border-line" /><p class="text-sm text-muted">Part of the <strong class="text-ink">{routine?.name}</strong> routine.</p></div></aside>
+    </div></div>
+  </article>
+</BaseLayout>

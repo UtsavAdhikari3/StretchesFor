@@ -1,0 +1,17 @@
+{
+  "exerciseId": "chin-tuck",
+  "version": "v1",
+  "sourceFootageSha256": "REPLACE_WITH_64_CHARACTER_SHA256",
+  "modelReleaseRecord": "PRIVATE_ARCHIVE_RECORD_ID",
+  "productionReleaseRecord": "PRIVATE_ARCHIVE_RECORD_ID",
+  "demonstrationPath": "/v1/chin-tuck/demonstration.mp4",
+  "posterPath": "/v1/chin-tuck/poster.webp",
+  "demonstrationSha256": "REPLACE_WITH_64_CHARACTER_SHA256",
+  "posterSha256": "REPLACE_WITH_64_CHARACTER_SHA256",
+  "clinicalApproval": {
+    "approvalDate": "YYYY-MM-DD",
+    "reviewer": "PRIVATE_ARCHIVE_RECORD_ID",
+    "reviewerRole": "Licensed clinician role",
+    "checklistVersion": "exercise-media-v1"
+  }
+}

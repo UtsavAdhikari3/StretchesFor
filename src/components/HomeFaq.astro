@@ -1,0 +1,46 @@
+---
+import { homeFaqs } from '../data/homeFaqs';
+---
+
+<section id="faqs" class="container-shell py-20 sm:py-28" aria-labelledby="home-faq-heading">
+  <div class="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
+    <div>
+      <p class="text-sm font-semibold text-brand">Stretching FAQ</p>
+      <h2 id="home-faq-heading" class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+        Clear answers to common stretching questions.
+      </h2>
+      <p class="mt-4 max-w-md text-pretty leading-7 text-muted">
+        General guidance for everyday mobility, lower back stiffness, and muscle strains. Use it as a starting point, not a diagnosis.
+      </p>
+      <a href="/medical-disclaimer/" class="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-brand hover:text-brand-hover">
+        Read the medical disclaimer <span class="ml-1" aria-hidden="true">→</span>
+      </a>
+    </div>
+
+    <div class="divide-y divide-line border-y border-line">
+      {homeFaqs.map((faq) => (
+        <details class="group py-5">
+          <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-5 font-semibold">
+            <span>{faq.question}</span>
+            <span class="text-xl font-normal text-brand transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+          </summary>
+          <div class="max-w-3xl space-y-4 pb-2 pr-8 leading-7 text-muted">
+            {faq.paragraphs.map((paragraph) => <p>{paragraph}</p>)}
+            {faq.items && (
+              <ol class="grid list-decimal gap-2 pl-5 marker:font-semibold marker:text-brand">
+                {faq.items.map((item) => <li class="pl-1">{item}</li>)}
+              </ol>
+            )}
+            {faq.relatedLink && (
+              <p>
+                <a href={faq.relatedLink.href} class="font-semibold text-brand hover:text-brand-hover">
+                  {faq.relatedLink.label} <span aria-hidden="true">→</span>
+                </a>
+              </p>
+            )}
+          </div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>

@@ -4,14 +4,42 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import PatternCard from '../../components/PatternCard.astro';
 import { patterns, regions } from '../../data/content';
+import { exercises } from '../../data/exercises';
 import type { BodyRegion, PainPattern } from '../../data/types';
+import { getExercisePath } from '../../lib/exerciseUrls';
 export const getStaticPaths = (() => regions.map((region) => ({ params: { region: region.id }, props: { region, regionPatterns: patterns.filter((pattern) => pattern.regionId === region.id) } }))) satisfies GetStaticPaths;
 const { region, regionPatterns } = Astro.props as { region: BodyRegion; regionPatterns: PainPattern[] };
-const structuredData = { '@context': 'https://schema.org', '@type': 'WebPage', name: `${region.name} pain patterns`, description: region.seoDescription };
+const searchName = region.id === 'lower-abdomen-groin'
+  ? 'Groin'
+  : region.name.replace(/\b\w/g, (letter) => letter.toUpperCase());
+const pageTitle = `Stretches for ${searchName} Pain`;
+const description = region.id === 'foot'
+  ? 'Explore gentle stretches for foot and heel pain, common pain patterns, safety questions, guided demonstrations, and easier movement options.'
+  : `Explore gentle stretches for ${searchName.toLowerCase()} pain, common pain patterns, safety questions, guided demonstrations, and easier movement options.`;
+const regionExercises = exercises.filter((exercise) => exercise.regionId === region.id);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'MedicalWebPage',
+  name: pageTitle,
+  description,
+  url: new URL(`/body/${region.id}`, Astro.site),
+  inLanguage: 'en',
+  mainEntity: {
+    '@type': 'ItemList',
+    name: `${searchName} movement guides`,
+    itemListElement: regionExercises.map((exercise, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: exercise.name,
+      url: new URL(getExercisePath(exercise.id), Astro.site),
+    })),
+  },
+};
 ---
-<BaseLayout title={`${region.name} pain patterns`} description={region.seoDescription} canonicalPath={`/body/${region.id}`}>
+<BaseLayout title={pageTitle} description={description} canonicalPath={`/body/${region.id}`} imageAlt={`${pageTitle} guide from StretchesFor`}>
   <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
-  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: region.name }]} /><div class="mt-12 max-w-3xl"><p class="text-sm font-semibold text-brand">Body guide</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">{region.name} pain: possible patterns</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">{region.summary} These guides organise common symptom patterns without claiming to identify the cause.</p><a href="/#pain-finder" class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas hover:opacity-85">Start the guided check</a></div></section>
-  <section class="border-y border-line bg-surface-raised/30 py-16"><div class="container-shell"><div class="mb-8 max-w-2xl"><h2 class="text-3xl font-semibold tracking-[-0.04em]">Possible reasons for pain here</h2><p class="mt-3 leading-7 text-muted">Symptoms commonly associated with these patterns can overlap. A physical examination may be needed to tell them apart.</p></div><div class="grid gap-5 lg:grid-cols-2">{regionPatterns.map((pattern) => <PatternCard pattern={pattern} />)}</div></div></section>
+  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: searchName }]} /><div class="mt-12 max-w-3xl"><p class="text-sm font-semibold text-brand">Body guide</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">{pageTitle}</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">{region.summary} Review possible symptom patterns, complete a focused safety screen, and explore gentle movement guides without assuming that stretching is right for every cause of pain.</p><a href="/#pain-finder" class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas hover:opacity-85">Start the guided check</a></div></section>
+  {regionExercises.length > 0 && <section class="border-y border-line bg-surface-raised/30 py-16"><div class="container-shell"><div class="mb-8 max-w-2xl"><h2 class="text-3xl font-semibold tracking-[-0.04em]">Gentle {searchName.toLowerCase()} movement guides</h2><p class="mt-3 leading-7 text-muted">Start only after reviewing the safety guidance. Keep the sensation mild, move with control, and stop if pain becomes sharp, spreading, electrical, or stronger.</p></div><div class="grid gap-4 sm:grid-cols-2">{regionExercises.map((exercise) => <a href={getExercisePath(exercise.id)} class="surface-card group p-6 transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Guided stretch</p><h3 class="mt-3 text-lg font-semibold">{exercise.name}</h3><p class="mt-2 text-sm leading-6 text-muted">{exercise.direction}. Suggested dose: {exercise.dose}.</p><span class="mt-5 inline-flex text-sm font-semibold text-brand group-hover:text-brand-hover">View instructions →</span></a>)}</div></div></section>}
+  <section class="container-shell py-16"><div class="mb-8 max-w-2xl"><h2 class="text-3xl font-semibold tracking-[-0.04em]">Possible reasons for pain here</h2><p class="mt-3 leading-7 text-muted">Symptoms commonly associated with these patterns can overlap. A physical examination may be needed to tell them apart.</p></div><div class="grid gap-5 lg:grid-cols-2">{regionPatterns.map((pattern) => <PatternCard pattern={pattern} />)}</div></section>
   <section class="container-shell py-16"><div class="surface-card max-w-3xl border-warning/40 bg-warning/5 p-6 sm:p-8"><h2 class="text-xl font-semibold">When not to stretch</h2><p class="mt-3 leading-7 text-muted">Do not use exercise to delay care for severe or rapidly worsening pain, major trauma, fever or feeling seriously unwell, unexplained swelling, new weakness or numbness, breathing difficulty, or loss of normal function.</p><a href="/medical-disclaimer" class="mt-5 inline-flex min-h-11 items-center font-semibold text-brand hover:text-brand-hover">Read the complete safety approach →</a></div></section>
 </BaseLayout>

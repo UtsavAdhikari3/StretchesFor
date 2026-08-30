@@ -1,4 +1,20 @@
 ---
+import ErrorPage from '../components/ErrorPage.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="Page not found" description="The requested StretchesFor page could not be found."><section class="container-shell grid min-h-[60vh] place-items-center py-20 text-center"><div><p class="text-sm font-semibold text-brand">404</p><h1 class="mt-3 text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">That page is out of range.</h1><p class="mx-auto mt-4 max-w-xl text-lg leading-8 text-muted">The guide may have moved, or the address may be incomplete.</p><a href="/" class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas">Return to the pain finder</a></div></section></BaseLayout>
+
+<BaseLayout
+  title="Page not found"
+  description="The requested StretchesFor page could not be found."
+  canonicalPath="/404"
+  robots="noindex, nofollow"
+>
+  <ErrorPage
+    code="404"
+    eyebrow="Page not found"
+    title="That page is out of range."
+    description="The guide may have moved, or the address may be incomplete. Head home to find a safer starting point."
+    primaryAction={{ href: '/#pain-finder', label: 'Return to the pain finder' }}
+    secondaryAction={{ href: '/exercises/', label: 'Browse exercises' }}
+  />
+</BaseLayout>

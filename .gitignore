@@ -17,6 +17,10 @@ pnpm-debug.log*
 .env
 .env.production
 
+# generated media reports and unpublished production source footage
+artifacts/
+media/source/
+
 # macOS-specific files
 .DS_Store
 

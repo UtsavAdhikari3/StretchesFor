@@ -1,32 +1,36 @@
 import { useEffect, useState } from 'react';
 import type { Exercise } from '../../data/types';
+import { getExerciseIllustration } from '../../data/exerciseIllustrations';
+import { exerciseMediaResolver, type ExerciseMediaResolver, type ProviderExercise } from '../../lib/exerciseProviders';
 
-export default function ExerciseMedia({ exercise }: { exercise: Exercise }) {
-  const demoUrl = exercise.externalExerciseId
-    ? `https://static.exercisedb.dev/media/${encodeURIComponent(exercise.externalExerciseId)}.gif`
-    : undefined;
-  const [status, setStatus] = useState<'ready' | 'unavailable'>(demoUrl ? 'ready' : 'unavailable');
-  const [playing, setPlaying] = useState(true);
+interface Props { exercise: Exercise; resolver?: ExerciseMediaResolver }
+
+export default function ExerciseMedia({ exercise, resolver = exerciseMediaResolver }: Props) {
+  const illustration = getExerciseIllustration(exercise.id);
+  const [media, setMedia] = useState<ProviderExercise | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [loading, setLoading] = useState(!illustration);
 
   useEffect(() => {
-    if (!demoUrl) {
-      setStatus('unavailable');
-      return;
-    }
-    const shouldPlay = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    setPlaying(shouldPlay);
-    setStatus('ready');
-  }, [demoUrl]);
+    setFailed(false);
+    if (illustration) { setMedia(null); setLoading(false); return; }
+    let cancelled = false;
+    const controller = new AbortController();
+    setLoading(true);
+    resolver.resolveWgerCandidates(exercise.sourceRef, (type) => document.createElement('video').canPlayType(type), controller.signal)
+      .then((candidates) => candidates[0] ?? null)
+      .then((candidate) => candidate ? candidate : resolver.resolveExerciseDbCandidate(exercise.sourceRef, controller.signal))
+      .then((candidate) => { if (!cancelled) { setMedia(candidate); setLoading(false); } })
+      .catch(() => { if (!cancelled) { setMedia(null); setLoading(false); } });
+    return () => { cancelled = true; controller.abort(); };
+  }, [exercise.id, illustration, resolver]);
 
-  return (
-    <figure>
-      <div className="relative mx-auto grid min-h-80 w-full max-w-sm place-items-center overflow-hidden rounded-2xl border border-line bg-canvas p-5">
-        {demoUrl && status === 'ready' && playing && <img src={demoUrl} alt={`${exercise.name} exercise demonstration`} width="180" height="180" loading="lazy" decoding="async" className="size-[11.25rem] max-w-full rounded-xl bg-white object-contain" onError={() => setStatus('unavailable')} />}
-        {status === 'ready' && !playing && <div className="max-w-xs text-center" role="status"><span className="mx-auto grid size-12 place-items-center rounded-full border border-line bg-surface text-brand" aria-hidden="true">Ⅱ</span><p className="mt-4 font-semibold">Demonstration paused</p><p className="mt-2 text-sm leading-6 text-muted">Use the written steps while motion is paused.</p></div>}
-        {status === 'unavailable' && <div className="max-w-xs text-center" role="status"><span className="mx-auto grid size-12 place-items-center rounded-xl border border-line bg-surface text-subtle" aria-hidden="true">—</span><p className="mt-4 font-semibold">Exercise demonstration unavailable.</p><p className="mt-2 text-sm leading-6 text-muted">Do not substitute another movement. Follow only the written instructions below.</p></div>}
-        {status === 'ready' && <button type="button" onClick={() => setPlaying((value) => !value)} className="absolute bottom-3 left-1/2 min-h-11 -translate-x-1/2 rounded-lg border border-line bg-surface/95 px-4 text-sm font-semibold shadow-xl backdrop-blur-md transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">{playing ? 'Pause demonstration' : 'Play demonstration'}</button>}
-      </div>
-      <figcaption className="mx-auto mt-3 max-w-sm text-center text-xs leading-5 text-subtle">Shown at its native resolution for a sharper demonstration. ExerciseDB supplies the media; StretchesFor supplies the safety guidance.</figcaption>
-    </figure>
-  );
+  if (illustration) return <figure className="overflow-hidden rounded-2xl border border-line bg-surface"><img src={illustration.src} width={illustration.width} height={illustration.height} loading="lazy" alt={illustration.alt} onError={() => setFailed(true)} className={`mx-auto h-auto max-h-[32rem] w-full object-contain ${failed ? 'hidden' : ''}`} />{failed && <Unavailable /> }<figcaption className="border-t border-line px-4 py-3 text-xs leading-5 text-subtle">StretchesFor illustration. Written steps are the authoritative guidance; this illustration has not been clinically reviewed.</figcaption></figure>;
+  if (loading) return <div role="status" className="grid min-h-64 place-items-center rounded-2xl border border-line bg-surface text-sm text-subtle">Loading demonstration…</div>;
+  if (!media || failed) return <Unavailable />;
+  const label = `${exercise.name} exercise demonstration`;
+  const onError = () => setFailed(true);
+  return <figure className="overflow-hidden rounded-2xl border border-line bg-surface">{media.media.type === 'video' ? <video controls playsInline width={640} poster={media.media.poster} aria-label={label} src={media.media.url} onError={onError} className="mx-auto max-h-[32rem] w-full object-contain" /> : <img src={media.media.url} width={640} height={480} loading="lazy" alt={label} onError={onError} className="mx-auto max-h-[32rem] w-full object-contain" />}<figcaption className="border-t border-line px-4 py-3 text-xs text-subtle">Demonstration supplied by {media.media.provider === 'exerciseDb' ? 'ExerciseDB' : 'Wger'}{media.media.author ? ` by ${media.media.author}` : ''}.</figcaption></figure>;
 }
+
+function Unavailable() { return <div role="status" className="grid min-h-64 place-items-center rounded-2xl border border-line bg-surface px-6 text-center text-sm text-subtle">Demonstration unavailable—follow the written steps.</div>; }

@@ -31,6 +31,8 @@ export default function PainFinder() {
   const [step, setStep] = useState<Step>('finder');
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerMap>({});
+  const [initialExerciseId, setInitialExerciseId] = useState<string>();
+  const [needsSafetyCheck, setNeedsSafetyCheck] = useState(false);
   const speech = useSpeechGuidance();
   const region = useMemo(() => getRegion(selectedHotspot?.contentRegionId ?? ''), [selectedHotspot]);
   const regionPatterns = useMemo(() => patterns.filter((item) => item.regionId === region?.id), [region]);
@@ -45,6 +47,8 @@ export default function PainFinder() {
     setPattern(undefined);
     setAnswers({});
     setQuestionIndex(0);
+    setInitialExerciseId(undefined);
+    setNeedsSafetyCheck(false);
     setStep('finder');
   }, []);
 
@@ -52,6 +56,8 @@ export default function PainFinder() {
     setPattern(next);
     setAnswers({});
     setQuestionIndex(0);
+    setInitialExerciseId(undefined);
+    setNeedsSafetyCheck(false);
     setStep(next.action === 'urgent-care' ? 'result' : 'questions');
   };
 
@@ -73,6 +79,8 @@ export default function PainFinder() {
     setPattern(undefined);
     setAnswers({});
     setQuestionIndex(0);
+    setInitialExerciseId(undefined);
+    setNeedsSafetyCheck(false);
     setStep('finder');
   };
 
@@ -81,8 +89,42 @@ export default function PainFinder() {
     setPattern(undefined);
     setAnswers({});
     setQuestionIndex(0);
+    setInitialExerciseId(undefined);
+    setNeedsSafetyCheck(false);
     setStep('finder');
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const exerciseId = params.get('exercise');
+    const regionId = params.get('region');
+    const patternId = params.get('pattern');
+
+    if (exerciseId) {
+      const exercise = exercises.find((item) => item.id === exerciseId);
+      const directRoutine = exercise ? routines.find((item) => item.exerciseIds.includes(exercise.id)) : undefined;
+      const directPattern = directRoutine ? patterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined;
+      const hotspot = exercise ? bodyRegions.find((item) => item.contentRegionId === exercise.regionId) : undefined;
+      if (exercise && directRoutine && directPattern && hotspot) {
+        setSelectedHotspot(hotspot);
+        setPattern(directPattern);
+        setInitialExerciseId(exercise.id);
+        setNeedsSafetyCheck(true);
+        setStep('routine');
+        return;
+      }
+    }
+
+    if (!regionId) return;
+    const hotspot = getBodyRegionHotspot(regionId) ?? bodyRegions.find((item) => item.contentRegionId === regionId);
+    if (!hotspot) return;
+    setSelectedHotspot(hotspot);
+    const selectedPattern = patternId ? patterns.find((item) => item.id === patternId && item.regionId === hotspot.contentRegionId) : undefined;
+    if (selectedPattern) {
+      setPattern(selectedPattern);
+      setStep(selectedPattern.action === 'urgent-care' ? 'result' : 'questions');
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedHotspot || step !== 'finder') return;
@@ -178,9 +220,9 @@ export default function PainFinder() {
           </section>
         )}
 
-        {step === 'result' && result && pattern && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => setStep('routine')} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
+        {step === 'result' && result && pattern && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => { setNeedsSafetyCheck(false); setStep('routine'); }} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
 
-        {step === 'routine' && routine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => setStep('result')} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← Back to safety result</button><div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={exercises} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} /></section>}
+        {step === 'routine' && routine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => { setAnswers({}); setQuestionIndex(0); setStep(needsSafetyCheck ? 'questions' : 'result'); }} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={exercises} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} /></section>}
       </div>
     </div>
   );

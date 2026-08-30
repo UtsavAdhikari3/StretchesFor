@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { exercises } from '../../data/exercises';
+import { getRegion } from '../../data/content';
+import { getExercisePath } from '../../lib/exerciseUrls';
+
+const title = 'Stretch and Mobility Exercise Library';
+const description = 'Browse step-by-step stretch and mobility exercise guides with demonstrations, suggested doses, common mistakes, easier options, and safety notes.';
+const structuredData = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, description, mainEntity: { '@type': 'ItemList', itemListElement: exercises.map((exercise, index) => ({ '@type': 'ListItem', position: index + 1, name: exercise.name, url: new URL(getExercisePath(exercise.id), Astro.site).toString() })) } };
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/exercises/">
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Exercises' }]} /><div class="mt-10 max-w-3xl"><p class="text-sm font-semibold text-brand">Exercise library</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">Stretch and mobility exercise guides</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">Each guide includes a demonstration, setup steps, suggested dose, common mistakes, easier options, and links into the existing guided player.</p></div></section>
+  <section class="border-y border-line bg-surface-raised/25 py-14 sm:py-20"><div class="container-shell grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{exercises.map((exercise) => <a href={getExercisePath(exercise.id)} class="surface-card group p-6 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised/40"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{getRegion(exercise.regionId)?.name} guide</p><h2 class="mt-3 text-xl font-semibold tracking-[-0.03em] group-hover:text-brand">{exercise.name}</h2><p class="mt-3 text-sm leading-6 text-muted">{exercise.direction}. {exercise.dose}.</p><span class="mt-5 inline-flex text-sm font-semibold text-brand">View instructions →</span></a>)}</div></section>
+</BaseLayout>

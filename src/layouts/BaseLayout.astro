@@ -8,15 +8,29 @@ interface Props {
   description: string;
   canonicalPath?: string;
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  imageType?: string;
+  ogType?: 'website' | 'article';
+  robots?: string;
 }
 
 const {
   title,
   description,
   canonicalPath = Astro.url.pathname,
-  image = '/social-card.svg',
+  image = '/social-card.png',
+  imageAlt = 'StretchesFor guided stretching and mobility tool',
+  imageWidth = 1200,
+  imageHeight = 630,
+  imageType,
+  ogType = 'website',
+  robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
 } = Astro.props;
 const canonical = new URL(canonicalPath, Astro.site);
+const socialImage = new URL(image, Astro.site);
+const socialImageType = imageType ?? (image.endsWith('.webp') ? 'image/webp' : image.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
 const fullTitle = title === 'StretchesFor' ? title : `${title} | StretchesFor`;
 ---
 
@@ -27,17 +41,50 @@ const fullTitle = title === 'StretchesFor' ? title : `${title} | StretchesFor`;
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#010102" />
     <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
     <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonical} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
-    <meta property="og:type" content="website" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="StretchesFor" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="StretchesFor" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:secure_url" content={socialImage} />
+    <meta property="og:image:type" content={socialImageType} />
+    <meta property="og:image:width" content={String(imageWidth)} />
+    <meta property="og:image:height" content={String(imageHeight)} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <title>{fullTitle}</title>
+    <script is:inline>
+      (() => {
+        const storageKey = 'stretchesfor-theme';
+        let theme = 'dark';
+
+        try {
+          const savedTheme = localStorage.getItem(storageKey);
+          if (savedTheme === 'light' || savedTheme === 'dark') theme = savedTheme;
+        } catch {
+          // Storage can be unavailable in privacy-restricted browsing contexts.
+        }
+
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f7f8fa' : '#010102');
+      })();
+    </script>
     <slot name="head" />
   </head>
   <body class="text-ink antialiased">

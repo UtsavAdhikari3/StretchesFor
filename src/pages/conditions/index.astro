@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { conditions } from '../../data/seoContent';
+
+const title = 'Stretch Guides by Condition and Pain Area';
+const description = 'Browse stretching guides for lower back, neck, knee, hip, foot, plantar fasciitis, shin splints, and other common pain areas.';
+const structuredData = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, description, mainEntity: { '@type': 'ItemList', itemListElement: conditions.map((condition, index) => ({ '@type': 'ListItem', position: index + 1, name: condition.title, url: new URL(`/${condition.slug}/`, Astro.site).toString() })) } };
+---
+
+<BaseLayout title={title} description={description} canonicalPath="/conditions/">
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Conditions' }]} /><div class="mt-10 max-w-3xl"><p class="text-sm font-semibold text-brand">Condition library</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">Stretch guides by pain area and condition</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">Start with a useful overview, review safety warnings, and choose gentle exercise guides without assuming stretching is appropriate for every cause of pain.</p></div></section>
+  <section class="border-y border-line bg-surface-raised/25 py-14 sm:py-20"><div class="container-shell grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{conditions.map((condition) => <a href={`/${condition.slug}/`} class="surface-card group flex flex-col p-6 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised/40"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Movement guide</p><h2 class="mt-3 text-xl font-semibold tracking-[-0.03em] group-hover:text-brand">{condition.title}</h2><p class="mt-3 flex-1 text-sm leading-6 text-muted">{condition.summary}</p><span class="mt-5 text-sm font-semibold text-brand">Read guide →</span></a>)}</div></section>
+</BaseLayout>

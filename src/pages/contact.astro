@@ -1,0 +1,36 @@
+---
+import ContentPage from '../components/ContentPage.astro';
+
+const sections = [
+  { id: 'contact', label: 'Contact us' },
+  { id: 'helpful-details', label: 'Helpful details' },
+  { id: 'medical', label: 'Medical questions' },
+  { id: 'privacy', label: 'Privacy note' },
+];
+---
+
+<ContentPage
+  title="Contact us"
+  description="Contact StretchesFor about accessibility, privacy, corrections, sources, or general website feedback."
+  eyebrow="Contact us"
+  heading="Questions, corrections, and thoughtful feedback are welcome."
+  intro="StretchesFor is an educational website, not a medical or emergency service. For site feedback, privacy questions, accessibility issues, or source corrections, reach us by email."
+  sections={sections}
+>
+  <h2 id="contact">Contact us</h2>
+  <div class="surface-card my-6 p-6 sm:p-8">
+    <p class="m-0 text-sm font-medium text-subtle">General email</p>
+    <a class="mt-2 inline-block break-all text-xl font-semibold" href="mailto:hello@stretchesfor.com">hello@stretchesfor.com</a>
+    <p class="mb-0 mt-4 text-sm">Selecting the address opens your default email application. There is no contact form and nothing is submitted through this website.</p>
+  </div>
+
+  <h2 id="helpful-details">What to include</h2>
+  <p>To help us understand a website issue, include the page address, what you expected to happen, what happened instead, and the browser or device you were using. Screenshots are helpful when they do not contain personal or health information.</p>
+  <p>For a content correction, please identify the statement, exercise, or source and explain the change you recommend.</p>
+
+  <h2 id="medical">Medical questions and emergencies</h2>
+  <p>We cannot diagnose symptoms, recommend individual treatment, review medical records, or provide emergency help by email. Do not send sensitive medical details. If you think you may be experiencing an emergency, contact your local emergency service now. For individual health concerns, speak with a qualified healthcare professional.</p>
+
+  <h2 id="privacy">Privacy note</h2>
+  <p>Email messages include the information you choose to send and may be retained as needed to respond or maintain appropriate records. For more information, read the <a href="/privacy">privacy policy</a>.</p>
+</ContentPage>

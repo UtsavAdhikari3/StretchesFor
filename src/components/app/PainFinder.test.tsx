@@ -1,10 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import PainFinder from './PainFinder';
 
-afterEach(cleanup);
+vi.mock('./BodyModel', () => ({ default: () => <div data-testid="body-model" /> }));
+
+afterEach(() => {
+  cleanup();
+  window.history.replaceState({}, '', '/');
+});
 
 describe('PainFinder', () => {
   it('moves directly from body selection to pattern choices and can change the area', async () => {
@@ -26,7 +31,6 @@ describe('PainFinder', () => {
   it('completes a movement-appropriate lower-back path', async () => {
     const user = userEvent.setup();
     render(<PainFinder />);
-    await user.click(screen.getByRole('button', { name: 'Back' }));
     await user.click(screen.getByRole('button', { name: 'Select Lower back' }));
     await user.click(screen.getAllByRole('button', { name: 'This sounds like me' })[0]);
 
@@ -47,5 +51,22 @@ describe('PainFinder', () => {
 
     expect(screen.getByRole('heading', { name: 'Possible urgent warning sign' })).toBeTruthy();
     expect(screen.queryByText(/Start chest-wall routine/)).toBeNull();
+  });
+
+  it('preselects a condition and starts its safety screen from URL parameters', async () => {
+    window.history.replaceState({}, '', '/?region=lower-back&pattern=nonspecific-lower-back#pain-finder');
+    render(<PainFinder />);
+
+    expect(await screen.findByText('Condition-specific safety screen')).toBeTruthy();
+    expect(screen.getByText(/Nonspecific mechanical lower-back pattern/)).toBeTruthy();
+  });
+
+  it('opens a requested exercise in the existing player with a safety reminder', async () => {
+    window.history.replaceState({}, '', '/?exercise=open-book#pain-finder');
+    render(<PainFinder />);
+
+    expect(await screen.findByRole('heading', { name: 'Open-book rotation' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Run the safety check first/ })).toBeTruthy();
+    expect(screen.getByText(/Direct exercise entry/)).toBeTruthy();
   });
 });

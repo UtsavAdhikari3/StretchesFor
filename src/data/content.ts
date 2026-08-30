@@ -124,7 +124,7 @@ const exerciseSeeds: Array<[string,string,string,string,string,string,string[],s
   ['prayer-glide','Prayer wrist glide','wrist','wrist','Inner wrist and forearm','Lower hands slightly',['Place palms together below the chin.','Keep palms touching as hands lower slightly.','Return before discomfort.'],'6 repetitions',35,false,['Pressing hard','Letting palms separate'],'Use fingertips together only.'],
 ];
 
-export type ExerciseBlueprint = Omit<Exercise, 'externalExerciseId' | 'expectedSensation' | 'stopConditions'>;
+export type ExerciseBlueprint = Omit<Exercise, 'sourceRef' | 'expectedSensation' | 'stopConditions'>;
 
 export const exerciseBlueprints: ExerciseBlueprint[] = exerciseSeeds.map(([id,name,regionId,_legacyRegionKey,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier]) => ({ id,name,regionId,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier }));
 

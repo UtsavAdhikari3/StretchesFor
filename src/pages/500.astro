@@ -1,0 +1,20 @@
+---
+import ErrorPage from '../components/ErrorPage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Something went wrong"
+  description="StretchesFor could not complete this request."
+  canonicalPath="/500"
+  robots="noindex, nofollow"
+>
+  <ErrorPage
+    code="500"
+    eyebrow="Temporary error"
+    title="We couldn't complete that request."
+    description="Something unexpected happened on our side. Please try again, or return home and choose another guide."
+    primaryAction={{ href: '', label: 'Try this page again' }}
+    secondaryAction={{ href: '/', label: 'Return home' }}
+  />
+</BaseLayout>

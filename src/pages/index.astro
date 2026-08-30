@@ -2,10 +2,42 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PainFinder from '../components/app/PainFinder';
 import RegionCard from '../components/RegionCard.astro';
+import HomeFaq from '../components/HomeFaq.astro';
 import { regions } from '../data/content';
+import { getHomeFaqSchema } from '../data/homeFaqs';
+
+const description = 'Explore stretches for lower back, neck, knee, hip, shoulder and joint pain with private safety screening, guided demos and no account required.';
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://stretchesfor.com/#website',
+      url: 'https://stretchesfor.com/',
+      name: 'StretchesFor',
+      alternateName: 'Stretches For',
+      description,
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': 'https://stretchesfor.com/#tool',
+      name: 'StretchesFor guided movement tool',
+      url: 'https://stretchesfor.com/',
+      description,
+      applicationCategory: 'HealthApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires a modern web browser with JavaScript enabled.',
+      isAccessibleForFree: true,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    },
+    getHomeFaqSchema(),
+  ],
+};
 ---
 
-<BaseLayout title="StretchesFor" description="A private, no-login guide to possible pain patterns, safety screening, and gentle movement routines.">
+<BaseLayout title="Stretches for Pain & Mobility Guides" description={description}>
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
   <section class="relative overflow-hidden border-b border-line">
     <div class="container-shell grid min-h-[42rem] items-center gap-14 py-20 lg:grid-cols-[0.92fr_1.08fr] lg:py-28">
       <div>
@@ -13,8 +45,8 @@ import { regions } from '../data/content';
           <span class="size-1.5 rounded-full bg-success"></span>
           Private by design · no account
         </div>
-        <h1 class="mt-7 max-w-4xl text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.06em] sm:text-6xl lg:text-7xl">A more believable way to begin moving again.</h1>
-        <p class="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">Locate pain on a realistic interactive body, complete a focused safety screen, and follow real exercise demonstrations with optional voice coaching.</p>
+        <h1 class="mt-7 max-w-4xl text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.06em] sm:text-6xl lg:text-7xl">Stretches for pain, with a safer way to start.</h1>
+        <p class="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">Explore gentle stretches for common pain areas. Locate discomfort on an interactive body, complete a focused safety screen, and follow exercise demonstrations with optional voice coaching.</p>
         <div class="mt-8 flex flex-wrap gap-3">
           <a href="#pain-finder" class="inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85">Find my starting point</a>
           <a href="/medical-disclaimer" class="inline-flex min-h-12 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read the safety approach</a>
@@ -115,6 +147,54 @@ import { regions } from '../data/content';
     </div>
     <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{regions.map((region) => <RegionCard region={region} />)}</div>
   </section>
+
+  <section class="border-y border-line bg-surface-raised/20 py-20 sm:py-28" aria-labelledby="about-tool-heading">
+    <div class="container-shell">
+      <div class="max-w-3xl">
+        <p class="text-sm font-semibold text-brand">About the tool</p>
+        <h2 id="about-tool-heading" class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Find stretches for the way your body feels today</h2>
+        <p class="mt-5 text-pretty text-lg leading-8 text-muted">StretchesFor is a free, private starting-point tool for people who want clear movement guidance without creating an account or sorting through a confusing exercise library. Choose the area that hurts on the interactive body, compare a few plain-language pain patterns, and complete a short safety screen. If gentle movement is a reasonable next step, the tool builds a small routine with visual demonstrations, a timer, dosage guidance, easier options, and optional spoken coaching.</p>
+        <p class="mt-5 text-pretty leading-7 text-muted">Rather than presenting every movement at once, StretchesFor narrows the library from the area and pattern you choose. Each result explains why a routine may fit, what to watch for, and when to stop. You stay in control: review the instructions before starting, pause whenever needed, switch to an easier option, or leave the session without saving personal health information.</p>
+      </div>
+
+      <div class="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
+        <div>
+          <h3 class="text-xl font-semibold tracking-[-0.025em]">Stretches for common pain areas</h3>
+          <div class="mt-4 space-y-5 leading-7 text-muted">
+            <p>The body guides cover <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-back">stretches for lower back pain</a> and <a class="font-medium text-brand hover:text-brand-hover" href="/body/upper-back">stretches for upper back pain</a>, with low-load movements selected for the part of the back you identify. You can also explore <a class="font-medium text-brand hover:text-brand-hover" href="/body/neck">stretches for neck pain</a> or <a class="font-medium text-brand hover:text-brand-hover" href="/body/shoulder">stretches for shoulder pain</a>. Every guide explains the expected sensation and reminds you that sharp, spreading, electrical, or worsening pain is a reason to stop.</p>
+            <p>For the lower body, use the dedicated guides for <a class="font-medium text-brand hover:text-brand-hover" href="/body/hip">stretches for hip pain</a>, <a class="font-medium text-brand hover:text-brand-hover" href="/body/knee">stretches for knee pain</a>, and <a class="font-medium text-brand hover:text-brand-hover" href="/body/ankle">stretches for ankle pain</a>. The foot guide includes <a class="font-medium text-brand hover:text-brand-hover" href="/body/foot">stretches for foot pain</a> affecting the sole, arch, or toes. People looking for <a class="font-medium text-brand hover:text-brand-hover" href="/body/foot">stretches for heel pain</a> can begin there too, because the guided foot routine includes the plantar fascia, arch, and ankle-control movements.</p>
+            <p>The upper-limb library also offers <a class="font-medium text-brand hover:text-brand-hover" href="/body/elbow">stretches for elbow pain</a> and <a class="font-medium text-brand hover:text-brand-hover" href="/body/wrist">stretches for wrist pain</a>, while the groin guide provides supported <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-abdomen-groin">stretches for groin pain</a>. These pages are educational, not diagnostic: similar symptoms can have different causes, and the safest next step may be professional assessment instead of stretching.</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-xl font-semibold tracking-[-0.025em]">Guidance for sitting, sleeping, running, and work</h3>
+          <div class="mt-4 space-y-5 leading-7 text-muted">
+            <p>Context matters. If you are searching for <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-back">stretches for lower back pain after sitting</a>, the tool first checks whether gentle walking or a position change feels comfortable before offering low-load back movements. For <a class="font-medium text-brand hover:text-brand-hover" href="/body/neck">stretches for neck pain from sleeping</a>, it favors small, controlled motion rather than pulling hard on a stiff neck. The same conservative approach applies to <a class="font-medium text-brand hover:text-brand-hover" href="/body/upper-back">stretches for back pain at work</a>, where regular movement breaks may be more useful than forcing one deep stretch.</p>
+            <p>Runners can explore <a class="font-medium text-brand hover:text-brand-hover" href="/body/hip">stretches for hip pain after running</a> or <a class="font-medium text-brand hover:text-brand-hover" href="/body/knee">stretches for knee pain after running</a>. Before a routine appears, the safety questions check for a major injury, rapid worsening, inability to bear weight, unexplained swelling, and other warning signs. This helps separate a gentle self-guided starting point from symptoms that deserve timely care.</p>
+            <p>Each routine stays intentionally short. Instructions explain how to set up, move, and return; timers help you avoid guessing; common-mistake notes discourage forcing range; and easier alternatives make the session adaptable. Your selections and questionnaire answers remain in temporary browser memory and are not sent to a StretchesFor account or health profile.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-14 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
+        <div class="bg-surface p-6">
+          <h3 class="font-semibold">Is StretchesFor a diagnosis?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">No. It organizes educational patterns and movement options. It cannot identify the cause of pain or replace an examination by a qualified healthcare professional.</p>
+        </div>
+        <div class="bg-surface p-6">
+          <h3 class="font-semibold">When should I avoid stretching?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">Skip self-guided exercise and seek appropriate care for major trauma, severe or rapidly worsening pain, new weakness or numbness, fever, unexplained swelling, breathing trouble, or loss of normal function.</p>
+        </div>
+        <div class="bg-surface p-6">
+          <h3 class="font-semibold">What about stretches for tailbone pain?</h3>
+          <p class="mt-3 text-sm leading-6 text-muted">Tailbone pain does not currently have a dedicated routine in the tool. Because falls, persistent pain, and symptoms around the pelvis can need individual assessment, use the safety guide rather than choosing an unrelated stretch.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <HomeFaq />
 
   <section class="container-shell pb-8">
     <div class="surface-card grid gap-8 overflow-hidden p-7 sm:p-10 lg:grid-cols-[1fr_auto] lg:items-center">
