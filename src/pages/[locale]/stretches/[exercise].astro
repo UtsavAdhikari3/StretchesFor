@@ -1,8 +1,6 @@
 ---
-import { localePath, locales, type Locale } from '../../../i18n';
+import { locales } from '../../../i18n';
 import { exercises } from '../../../data/exercises';
-export const getStaticPaths = () => locales.flatMap((locale) => exercises.map((exercise) => ({ params: { locale, exercise: exercise.id }, props: { locale, exerciseId: exercise.id } })));
-const locale = Astro.params.locale as Locale;
-const exerciseId = Astro.params.exercise!;
-return Astro.redirect(localePath(locale, `/exercises/${exerciseId}/`), 301);
+export const getStaticPaths = () => locales.flatMap((locale) => exercises.map((exercise) => ({ params: { locale, exercise: exercise.id } })));
+return Astro.redirect(`/${Astro.params.locale}/exercises/${Astro.params.exercise}/`, 301);
 ---

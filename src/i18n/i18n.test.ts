@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { exercises } from '../data/exercises';
 import { localizeExercise } from './content';
 import { localeInfo, localePath, locales, switchLocalePath, t } from './index';
+import { translateHtml } from './translateHtml';
 
 describe('internationalization', () => {
   it('defines every requested prefixed locale and speech language', () => {
@@ -32,5 +33,33 @@ describe('internationalization', () => {
       }
     }
   });
-});
 
+  it('translates document copy without modifying executable code', () => {
+    const source = `<!doctype html><html lang="en"><head>
+      <meta name="description" content="Start stretching">
+      <script>const theme = 'light'; document.querySelector('[data-language-select]')?.addEventListener('change', (event) => event.currentTarget.value);</script>
+      <script type="application/ld+json">{"@type":"WebApplication","name":"Start stretching","inLanguage":"en","url":"https://stretchesfor.com/about/","applicationCategory":"HealthApplication","offers":{"@type":"Offer","priceCurrency":"USD"}}</script>
+      <style>.light { color: red; }</style>
+    </head><body><p>Start stretching</p><code>const theme = 'light';</code></body></html>`;
+
+    const translated = translateHtml(source, 'fr');
+    const localizedCallToAction = t('fr', 'Start stretching');
+
+    expect(translated).toContain('<html lang="fr">');
+    expect(translated).toContain(`<p>${localizedCallToAction}</p>`);
+    expect(translated).toContain("const theme = 'light'");
+    expect(translated).toContain('event.currentTarget.value');
+    expect(translated).toContain("<style>.light { color: red; }</style>");
+    expect(translated).toContain("<code>const theme = 'light';</code>");
+
+    const json = translated.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)?.[1];
+    expect(JSON.parse(json ?? '')).toMatchObject({
+      '@type': 'WebApplication',
+      name: localizedCallToAction,
+      inLanguage: 'fr',
+      url: 'https://stretchesfor.com/fr/about/',
+      applicationCategory: 'HealthApplication',
+      offers: { '@type': 'Offer', priceCurrency: 'USD' },
+    });
+  });
+});
