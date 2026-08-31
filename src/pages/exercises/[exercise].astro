@@ -8,10 +8,14 @@ import { getExerciseIllustration } from '../../data/exerciseIllustrations';
 import { getExerciseFlowHref, getExerciseSeo } from '../../data/seoContent';
 import type { Exercise } from '../../data/types';
 import { getExercisePath, getExerciseSlug } from '../../lib/exerciseUrls';
+import { getLocaleFromPath } from '../../i18n';
+import { localizeExercise } from '../../i18n/content';
 
 export const getStaticPaths = (() => exercises.map((exercise) => ({ params: { exercise: getExerciseSlug(exercise.id) }, props: { exercise } }))) satisfies GetStaticPaths;
 
 const { exercise } = Astro.props as { exercise: Exercise };
+const locale = getLocaleFromPath(Astro.url.pathname);
+const translatedExercise = localizeExercise(locale, exercise);
 const { region, routine, targets, conditions, relatedExercises } = getExerciseSeo(exercise.id)!;
 const illustration = getExerciseIllustration(exercise.id);
 const canonicalPath = getExercisePath(exercise.id);
@@ -43,7 +47,7 @@ const structuredData = {
 
     <section class="border-y border-line bg-surface-raised/25 py-12 sm:py-16" aria-labelledby="demonstration-heading">
       <div class="container-shell grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,.9fr)] lg:items-start">
-        <div class="min-w-0"><h2 id="demonstration-heading" class="sr-only">{exercise.name} demonstration</h2><ExerciseMedia exercise={exercise} client:visible={{ rootMargin: '400px' }} /></div>
+        <div class="min-w-0"><h2 id="demonstration-heading" class="sr-only">{exercise.name} demonstration</h2><ExerciseMedia exercise={translatedExercise} locale={locale} client:visible={{ rootMargin: '400px' }} /></div>
         <div><div class="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line"><div class="bg-surface p-4"><p class="text-xs text-subtle">Suggested dose</p><p class="mt-1 text-sm font-semibold">{exercise.dose}</p></div><div class="bg-surface p-4"><p class="text-xs text-subtle">Target area</p><p class="mt-1 text-sm font-semibold">{exercise.feltArea}</p></div></div><h2 class="mt-8 text-2xl font-semibold tracking-[-0.035em]">How to do {exercise.name}</h2><ol class="mt-5 grid gap-4">{exercise.instructions.map((instruction, index) => <li class="flex gap-3 leading-7 text-muted"><span class="grid size-8 shrink-0 place-items-center rounded-full border border-line bg-surface text-xs font-semibold text-ink">{index + 1}</span><span>{instruction}</span></li>)}</ol>{exercise.bilateral && <p class="mt-5 rounded-xl border border-line bg-surface p-4 text-sm leading-6 text-muted"><strong class="text-ink">Both sides:</strong> Complete one comfortable side, reset your position, then repeat on the other. Do not force both sides to match.</p>}<a href={startHref} class="mt-7 inline-flex min-h-12 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-white hover:bg-brand-hover">Open in guided player</a></div>
       </div>
     </section>

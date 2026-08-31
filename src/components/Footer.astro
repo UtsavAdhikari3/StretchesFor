@@ -1,36 +1,41 @@
+---
+import { localePath, t, type Locale } from '../i18n';
+const { locale } = Astro.props as { locale: Locale };
+const path = (href: string) => localePath(locale, href);
+---
 <footer class="mt-24 border-t border-line">
   <div class="container-shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
     <div>
       <p class="font-semibold tracking-[-0.02em]" translate="no">stretchesfor</p>
-      <p class="mt-3 max-w-sm text-sm leading-6 text-muted">Clear, conservative movement education. No diagnosis or account; guided choices remain in the page URL.</p>
+      <p class="mt-3 max-w-sm text-sm leading-6 text-muted">{t(locale, 'Clear, conservative movement education with safety checks and guided exercises.')}</p>
     </div>
     <div class="text-sm">
-      <p class="font-medium text-ink">Explore</p>
+      <p class="font-medium text-ink">{t(locale, 'Explore')}</p>
       <div class="mt-3 grid gap-2 text-muted">
-        <a href="/guide/locate/" class="hover:text-ink">Guide to Stretch</a>
-        <a href="/conditions/" class="hover:text-ink">Condition guides</a>
-        <a href="/exercises/" class="hover:text-ink">Exercise library</a>
+        <a href={path('/#pain-finder')} class="hover:text-ink">{t(locale, 'Guide to Stretch')}</a>
+        <a href={path('/conditions/')} class="hover:text-ink">{t(locale, 'Condition guides')}</a>
+        <a href={path('/exercises/')} class="hover:text-ink">{t(locale, 'Exercise library')}</a>
       </div>
     </div>
     <div class="text-sm">
-      <p class="font-medium text-ink">Company</p>
+      <p class="font-medium text-ink">{t(locale, 'Company')}</p>
       <div class="mt-3 grid gap-2 text-muted">
-        <a href="/about" class="hover:text-ink">About us</a>
-        <a href="/contact" class="hover:text-ink">Contact us</a>
+        <a href={path('/about')} class="hover:text-ink">{t(locale, 'About us')}</a>
+        <a href={path('/contact')} class="hover:text-ink">{t(locale, 'Contact us')}</a>
       </div>
     </div>
     <div class="text-sm">
-      <p class="font-medium text-ink">Important</p>
+      <p class="font-medium text-ink">{t(locale, 'Important')}</p>
       <div class="mt-3 grid gap-2 text-muted">
-        <a href="/medical-disclaimer" class="hover:text-ink">Medical disclaimer</a>
-        <a href="/privacy" class="hover:text-ink">Privacy policy</a>
-        <a href="/terms" class="hover:text-ink">Terms &amp; conditions</a>
+        <a href={path('/medical-disclaimer')} class="hover:text-ink">{t(locale, 'Medical disclaimer')}</a>
+        <a href={path('/privacy')} class="hover:text-ink">{t(locale, 'Privacy policy')}</a>
+        <a href={path('/terms')} class="hover:text-ink">{t(locale, 'Terms & conditions')}</a>
       </div>
     </div>
   </div>
   <div class="border-t border-line">
     <div class="container-shell flex flex-col gap-2 py-5 text-xs leading-5 text-subtle sm:flex-row sm:justify-between">
-      <p>Educational information only. Not a diagnosis or a substitute for medical care.</p>
+      <p>{t(locale, 'Educational information only. Not a diagnosis or a substitute for medical care.')}</p>
       <p>&copy; {new Date().getFullYear()} stretchesfor</p>
     </div>
   </div>

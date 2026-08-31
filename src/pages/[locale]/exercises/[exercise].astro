@@ -1,0 +1,9 @@
+---
+import Page from '../../exercises/[exercise].astro';
+import { locales } from '../../../i18n';
+import { exercises } from '../../../data/exercises';
+export const getStaticPaths = () => locales.flatMap((locale) => exercises.map((exercise) => ({ params: { locale, exercise: exercise.id }, props: { exercise } })));
+const { exercise } = Astro.props;
+---
+<Page exercise={exercise} />
+

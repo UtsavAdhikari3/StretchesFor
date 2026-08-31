@@ -1,5 +1,6 @@
 import type { Answer } from '../data/types';
 import type { AnswerMap } from './triage';
+import { localePath, type Locale } from '../i18n';
 
 export type GuideStep = 'finder' | 'questions' | 'result' | 'routine';
 
@@ -43,7 +44,7 @@ export function parseGuideState(search: string): GuideFlowState {
   };
 }
 
-export function createGuideHref(step: GuideStep, state: GuideFlowState = {}): string {
+export function createGuideHref(step: GuideStep, state: GuideFlowState = {}, locale?: Locale): string {
   const params = new URLSearchParams();
   if (state.region) params.set('region', state.region);
   if (state.pattern) params.set('pattern', state.pattern);
@@ -55,5 +56,6 @@ export function createGuideHref(step: GuideStep, state: GuideFlowState = {}): st
   if (state.exercise) params.set('exercise', state.exercise);
   if (state.entry) params.set('entry', state.entry);
   const query = params.toString();
-  return `${guidePaths[step]}${query ? `?${query}` : ''}`;
+  const href = `${guidePaths[step]}${query ? `?${query}` : ''}`;
+  return locale ? localePath(locale, href) : href;
 }

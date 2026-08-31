@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { getLocaleFromPath, localeInfo, localePath, locales, switchLocalePath, t, type Locale } from '../i18n';
 
 interface Props {
   title: string;
@@ -14,6 +15,7 @@ interface Props {
   imageType?: string;
   ogType?: 'website' | 'article';
   robots?: string;
+  locale?: Locale;
 }
 
 const {
@@ -27,23 +29,30 @@ const {
   imageType,
   ogType = 'website',
   robots = 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+  locale = getLocaleFromPath(Astro.url.pathname),
 } = Astro.props;
-const canonical = new URL(canonicalPath, Astro.site);
+const canonical = new URL(localePath(locale, canonicalPath), Astro.site);
 const socialImage = new URL(image, Astro.site);
 const socialImageType = imageType ?? (image.endsWith('.webp') ? 'image/webp' : image.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
 const fullTitle = title === 'stretchesfor' ? title : `${title} | stretchesfor`;
+const translatedTitle = t(locale, fullTitle);
+const translatedDescription = t(locale, description);
+const translatedImageAlt = t(locale, imageAlt);
+const alternatePath = (alternateLocale: Locale) => switchLocalePath(canonical.pathname, alternateLocale);
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang={localeInfo[locale].htmlLang} data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#f7f8fa" />
-    <meta name="description" content={description} />
+    <meta name="description" content={translatedDescription} />
     <meta name="robots" content={robots} />
     <meta name="generator" content={Astro.generator} />
     <link rel="canonical" href={canonical} />
+    {locales.map((alternateLocale) => <link rel="alternate" hreflang={localeInfo[alternateLocale].htmlLang} href={new URL(alternatePath(alternateLocale), Astro.site)} />)}
+    <link rel="alternate" hreflang="x-default" href={new URL(alternatePath('en'), Astro.site)} />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -53,22 +62,23 @@ const fullTitle = title === 'stretchesfor' ? title : `${title} | stretchesfor`;
     <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="stretchesfor" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:title" content={fullTitle} />
-    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={localeInfo[locale].ogLocale} />
+    {locales.filter((alternateLocale) => alternateLocale !== locale).map((alternateLocale) => <meta property="og:locale:alternate" content={localeInfo[alternateLocale].ogLocale} />)}
+    <meta property="og:title" content={translatedTitle} />
+    <meta property="og:description" content={translatedDescription} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:secure_url" content={socialImage} />
     <meta property="og:image:type" content={socialImageType} />
     <meta property="og:image:width" content={String(imageWidth)} />
     <meta property="og:image:height" content={String(imageHeight)} />
-    <meta property="og:image:alt" content={imageAlt} />
+    <meta property="og:image:alt" content={translatedImageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={fullTitle} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:title" content={translatedTitle} />
+    <meta name="twitter:description" content={translatedDescription} />
     <meta name="twitter:image" content={socialImage} />
-    <meta name="twitter:image:alt" content={imageAlt} />
-    <title>{fullTitle}</title>
+    <meta name="twitter:image:alt" content={translatedImageAlt} />
+    <title>{translatedTitle}</title>
     <script is:inline>
       (() => {
         const storageKey = 'stretchesfor-theme';
@@ -88,9 +98,9 @@ const fullTitle = title === 'stretchesfor' ? title : `${title} | stretchesfor`;
     <slot name="head" />
   </head>
   <body class="text-ink antialiased">
-    <a href="#main-content" class="fixed left-4 top-4 z-50 -translate-y-24 rounded-lg bg-brand px-4 py-3 font-semibold text-white transition-transform duration-200 focus:translate-y-0">Skip to main content</a>
-    <Header />
+    <a href="#main-content" class="fixed left-4 top-4 z-50 -translate-y-24 rounded-lg bg-brand px-4 py-3 font-semibold text-white transition-transform duration-200 focus:translate-y-0">{t(locale, 'Skip to main content')}</a>
+    <Header locale={locale} pathname={Astro.url.pathname} search={Astro.url.search} />
     <main id="main-content"><slot /></main>
-    <Footer />
+    <Footer locale={locale} />
   </body>
 </html>

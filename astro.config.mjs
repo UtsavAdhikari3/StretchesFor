@@ -7,7 +7,12 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://stretchesfor.com',
-  integrations: [react(), sitemap({ filter: (page) => !page.includes('/stretches/') && !page.includes('/guide/') })],
+  i18n: {
+    locales: ['en', 'es', 'fr', 'de', 'pt'],
+    defaultLocale: 'en',
+    routing: { prefixDefaultLocale: true },
+  },
+  integrations: [react(), sitemap({ filter: (page) => /^https:\/\/stretchesfor\.com\/(?:en|es|fr|de|pt)\//.test(page) && !page.includes('/stretches/') && !page.includes('/guide/') })],
   vite: {
     // React's development JSX runtime exports jsxDEV, while its production
     // runtime intentionally does not. Keep Astro build and dev dependency

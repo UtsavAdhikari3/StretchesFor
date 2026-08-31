@@ -9,6 +9,9 @@ import { exercises, routines } from '../../data/exercises';
 import type { Answer, PainPattern } from '../../data/types';
 import { evaluateAnswers, type AnswerMap } from '../../lib/triage';
 import { createGuideHref, parseGuideState, type GuideFlowState, type GuideStep } from '../../lib/guideFlow';
+import { localeInfo, t, type Locale } from '../../i18n';
+import { localizeExercise, localizeHotspot, localizePattern, localizeQuestion, localizeRegion, localizeResult, localizeRoutine } from '../../i18n/content';
+import { useLocalizedDom } from './useLocalizedDom';
 
 const answerOptions: Array<{ value: Answer; label: string; hint: string; symbol: string }> = [
   { value: 'yes', label: 'Yes', hint: 'This is present', symbol: '✓' },
@@ -27,64 +30,76 @@ interface Props {
   initialStep: GuideStep;
   initialSearch?: string;
   onNavigate?: (href: string) => void;
+  locale?: Locale;
 }
 
-export default function PainFinder({ initialStep, initialSearch, onNavigate }: Props) {
+export default function PainFinder({ initialStep, initialSearch, onNavigate, locale }: Props) {
+  const routeLocale = locale;
+  locale ??= 'en';
   const guideSectionRef = useRef<HTMLDivElement>(null);
   const patternSelectionRef = useRef<HTMLDivElement>(null);
+  useLocalizedDom(guideSectionRef, locale);
+  const localizedExercises = useMemo(() => exercises.map((exercise) => localizeExercise(locale, exercise)), [locale]);
+  const localizedRoutines = useMemo(() => routines.map((routine) => localizeRoutine(locale, routine)), [locale]);
+  const localizedPatterns = useMemo(() => patterns.map((item) => localizePattern(locale, item)), [locale]);
+  const localizedBodyRegions = useMemo(() => bodyRegions.map((item) => localizeHotspot(locale, item)), [locale]);
+  const localizedRegionGroups = useMemo(() => bodyRegionGroups.map((group) => t(locale, group)), [locale]);
   const urlState = useMemo(
     () => parseGuideState(initialSearch ?? (typeof window === 'undefined' ? '' : window.location.search)),
     [initialSearch],
   );
   const directExercise = useMemo(
-    () => urlState.exercise ? exercises.find((item) => item.id === urlState.exercise) : undefined,
-    [urlState.exercise],
+    () => urlState.exercise ? localizedExercises.find((item) => item.id === urlState.exercise) : undefined,
+    [localizedExercises, urlState.exercise],
   );
   const directRoutine = useMemo(
     () => directExercise
-      ? routines.find((item) => item.regionId === directExercise.regionId && item.exerciseIds.includes(directExercise.id))
-        ?? routines.find((item) => item.exerciseIds.includes(directExercise.id))
+      ? localizedRoutines.find((item) => item.regionId === directExercise.regionId && item.exerciseIds.includes(directExercise.id))
+        ?? localizedRoutines.find((item) => item.exerciseIds.includes(directExercise.id))
       : undefined,
-    [directExercise],
+    [directExercise, localizedRoutines],
   );
   const directPattern = useMemo(
-    () => directRoutine ? patterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined,
-    [directRoutine],
+    () => directRoutine ? localizedPatterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined,
+    [directRoutine, localizedPatterns],
   );
   const directHotspot = useMemo(
-    () => directExercise ? bodyRegions.find((item) => item.contentRegionId === directExercise.regionId) : undefined,
-    [directExercise],
+    () => directExercise ? localizedBodyRegions.find((item) => item.contentRegionId === directExercise.regionId) : undefined,
+    [directExercise, localizedBodyRegions],
   );
   const selectedHotspot = useMemo(
-    () => directHotspot ?? (urlState.region ? getBodyRegionHotspot(urlState.region) ?? bodyRegions.find((item) => item.contentRegionId === urlState.region) : undefined),
-    [directHotspot, urlState.region],
+    () => directHotspot ?? (urlState.region ? localizedBodyRegions.find((item) => item.id === urlState.region) ?? localizedBodyRegions.find((item) => item.contentRegionId === urlState.region) : undefined),
+    [directHotspot, localizedBodyRegions, urlState.region],
   );
   const pattern = useMemo(
-    () => directPattern ?? (urlState.pattern ? patterns.find((item) => item.id === urlState.pattern && (!selectedHotspot || item.regionId === selectedHotspot.contentRegionId)) : undefined),
-    [directPattern, selectedHotspot, urlState.pattern],
+    () => directPattern ?? (urlState.pattern ? localizedPatterns.find((item) => item.id === urlState.pattern && (!selectedHotspot || item.regionId === selectedHotspot.contentRegionId)) : undefined),
+    [directPattern, localizedPatterns, selectedHotspot, urlState.pattern],
   );
   const step = initialStep;
   const answers: AnswerMap = urlState.answers ?? {};
   const initialExerciseId = directExercise?.id;
   const needsSafetyCheck = urlState.entry === 'exercise';
-  const speech = useSpeechGuidance(false);
-  const region = useMemo(() => getRegion(selectedHotspot?.contentRegionId ?? ''), [selectedHotspot]);
-  const regionPatterns = useMemo(() => patterns.filter((item) => item.regionId === region?.id), [region]);
-  const questions = useMemo(() => pattern ? questionsFor(pattern) : [], [pattern]);
+  const speech = useSpeechGuidance(false, localeInfo[locale].speechLang);
+  const region = useMemo(() => {
+    const found = getRegion(selectedHotspot?.contentRegionId ?? '');
+    return found ? localizeRegion(locale, found) : undefined;
+  }, [locale, selectedHotspot]);
+  const regionPatterns = useMemo(() => localizedPatterns.filter((item) => item.regionId === region?.id), [localizedPatterns, region]);
+  const questions = useMemo(() => pattern ? questionsFor(pattern).map((question) => localizeQuestion(locale, question)) : [], [locale, pattern]);
   const firstUnansweredQuestionIndex = questions.findIndex((question) => answers[question.id as keyof AnswerMap] === undefined);
   const lastAccessibleQuestionIndex = firstUnansweredQuestionIndex >= 0 ? firstUnansweredQuestionIndex : Math.max(questions.length - 1, 0);
   const questionIndex = Math.min(urlState.question ?? 0, lastAccessibleQuestionIndex);
-  const result = useMemo(() => pattern ? evaluateAnswers(pattern, answers) : undefined, [pattern, answers]);
-  const routine = useMemo(() => directRoutine ?? (pattern?.routineId ? routines.find((item) => item.id === pattern.routineId) : undefined), [directRoutine, pattern]);
+  const result = useMemo(() => pattern ? localizeResult(locale, evaluateAnswers(pattern, answers)) : undefined, [locale, pattern, answers]);
+  const routine = useMemo(() => directRoutine ?? (pattern?.routineId ? localizedRoutines.find((item) => item.id === pattern.routineId) : undefined), [directRoutine, localizedRoutines, pattern]);
   const canShowResult = pattern?.action === 'urgent-care' || answers.emergency === 'yes' || firstUnansweredQuestionIndex < 0;
   const canShowRoutine = needsSafetyCheck || firstUnansweredQuestionIndex < 0;
 
   const navigate = useCallback((nextStep: GuideStep, nextState: GuideFlowState = {}) => {
     speech.stop();
-    const href = createGuideHref(nextStep, nextState);
+    const href = createGuideHref(nextStep, nextState, routeLocale);
     if (onNavigate) onNavigate(href);
     else window.location.assign(href);
-  }, [onNavigate, speech.stop]);
+  }, [onNavigate, routeLocale, speech.stop]);
 
   const currentState = useMemo<GuideFlowState>(() => ({
     region: selectedHotspot?.id,
@@ -147,9 +162,9 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate }: P
   };
 
   const updateRoutineExercise = useCallback((exerciseId: string) => {
-    const href = createGuideHref('routine', { ...currentState, question: undefined, exercise: exerciseId });
+    const href = createGuideHref('routine', { ...currentState, question: undefined, exercise: exerciseId }, routeLocale);
     window.history.pushState({}, '', href);
-  }, [currentState]);
+  }, [currentState, routeLocale]);
 
   useEffect(() => {
     const section = guideSectionRef.current;
@@ -209,14 +224,14 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate }: P
 
   useEffect(() => {
     if (!speech.enabled) return;
-    if (step === 'finder' && !selectedHotspot) speech.speak('Where does it hurt? Rotate the body, or choose a region from the text list.');
-    if (step === 'finder' && selectedHotspot) speech.speak(`${selectedHotspot.label} selected. Compare the possible symptom patterns below.`);
+    if (step === 'finder' && !selectedHotspot) speech.speak(t(locale, 'Where does it hurt? Rotate the body, or choose a region from the text list.'));
+    if (step === 'finder' && selectedHotspot) speech.speak(`${selectedHotspot.label}. ${t(locale, 'Next, choose the description that feels closest.')}`);
     if (step === 'questions' && questions[questionIndex]) {
       const question = questions[questionIndex];
-      speech.speak(`${question.prompt} ${question.help ?? ''} Choose yes, no, or not sure.`);
+      speech.speak(`${question.prompt} ${question.help ?? ''} ${t(locale, 'Yes')}, ${t(locale, 'No')}, ${t(locale, 'Not sure')}.`);
     }
     if (step === 'result' && result) speech.speak(`${result.title}. ${result.description} ${result.nextStep}`);
-  }, [speech.enabled, speech.speak, step, selectedHotspot?.id, questions, questionIndex, result]);
+  }, [locale, speech.enabled, speech.speak, step, selectedHotspot?.id, questions, questionIndex, result]);
 
   const activeStepIndex = flowSteps.findIndex((item) => item.id === step);
   const progress = step === 'finder' ? (selectedHotspot ? 28 : 10) : step === 'questions' ? 35 + ((questionIndex + 1) / Math.max(questions.length, 1)) * 35 : step === 'result' ? 85 : 100;
@@ -224,8 +239,7 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate }: P
 
   return (
     <div ref={guideSectionRef} className="surface-card overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,.5)]">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-surface-raised/40 px-5 py-4 sm:px-7">
-        <div className="min-w-0"><div className="flex items-center gap-2"><span className="size-2 rounded-full bg-success" aria-hidden="true" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">URL-based session</p></div><p className="mt-1 text-sm text-muted">Your choices stay in the URL so refresh and browser navigation keep your place.</p></div>
+      <div className="flex flex-wrap items-center justify-end gap-4 border-b border-line bg-surface-raised/40 px-5 py-4 sm:px-7">
         <div className="flex flex-wrap gap-2"><VoiceToggle enabled={speech.enabled} supported={speech.supported} onToggle={speech.toggle} label="Voice guide" />{(selectedHotspot || step !== 'finder') && <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">Start over</button>}</div>
       </div>
       <div className="h-1 bg-line" aria-hidden="true"><div className="h-full bg-brand transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
@@ -240,11 +254,11 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate }: P
             <div className="min-w-0 rounded-2xl border border-line bg-canvas p-4 sm:p-5">
               <div><h3 className="font-semibold">Choose from the list</h3><p className="mt-1 text-xs leading-5 text-subtle">24 precise regions</p></div>
               <div className="mt-5 grid gap-6 xl:max-h-[38rem] xl:overflow-y-auto xl:pr-2">
-                {bodyRegionGroups.map((group) => (
+                {localizedRegionGroups.map((group) => (
                   <fieldset key={group}>
                     <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-subtle">{group}</legend>
                     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                      {bodyRegions.filter((item) => item.group === group).map((item) => (
+                      {localizedBodyRegions.filter((item) => item.group === group).map((item) => (
                         <button key={item.id} type="button" aria-label={`Select ${item.label}`} onClick={() => chooseRegion(item.id)} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-left text-sm font-medium text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">{item.label}</button>
                       ))}
                     </div>
@@ -294,7 +308,7 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate }: P
 
         {step === 'result' && result && pattern && canShowResult && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => navigate('routine', { ...currentState, question: undefined, exercise: routine.exerciseIds[0], entry: undefined })} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
 
-        {step === 'routine' && routine && canShowRoutine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => navigate(needsSafetyCheck ? 'questions' : 'result', needsSafetyCheck ? { region: selectedHotspot?.id, pattern: pattern?.id, question: 0, answers: {} } : { ...currentState, exercise: undefined, entry: undefined })} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={exercises} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} onExerciseChange={updateRoutineExercise} /></section>}
+        {step === 'routine' && routine && canShowRoutine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => navigate(needsSafetyCheck ? 'questions' : 'result', needsSafetyCheck ? { region: selectedHotspot?.id, pattern: pattern?.id, question: 0, answers: {} } : { ...currentState, exercise: undefined, entry: undefined })} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={localizedExercises} locale={locale} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} onExerciseChange={updateRoutineExercise} /></section>}
       </div>
     </div>
   );

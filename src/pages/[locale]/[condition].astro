@@ -1,0 +1,9 @@
+---
+import Page from '../[condition].astro';
+import { locales } from '../../i18n';
+import { conditions } from '../../data/seoContent';
+export const getStaticPaths = () => locales.flatMap((locale) => conditions.map((condition) => ({ params: { locale, condition: condition.slug }, props: { condition } })));
+const { condition } = Astro.props;
+---
+<Page condition={condition} />
+

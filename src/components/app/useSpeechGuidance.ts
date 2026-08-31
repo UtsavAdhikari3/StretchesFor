@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export function useSpeechGuidance(initialEnabled = true) {
+export function useSpeechGuidance(initialEnabled = true, language = 'en-US') {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [supported, setSupported] = useState(false);
 
@@ -17,14 +17,16 @@ export function useSpeechGuidance(initialEnabled = true) {
     if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language;
     utterance.rate = 0.94;
     utterance.pitch = 1;
     utterance.volume = 0.9;
-    const preferred = window.speechSynthesis.getVoices().find((voice) => /^en(-|_)/i.test(voice.lang) && /natural|enhanced|premium/i.test(voice.name))
-      ?? window.speechSynthesis.getVoices().find((voice) => /^en(-|_)/i.test(voice.lang));
+    const languagePrefix = language.split('-')[0];
+    const preferred = window.speechSynthesis.getVoices().find((voice) => new RegExp(`^${languagePrefix}(-|_)`, 'i').test(voice.lang) && /natural|enhanced|premium/i.test(voice.name))
+      ?? window.speechSynthesis.getVoices().find((voice) => new RegExp(`^${languagePrefix}(-|_)`, 'i').test(voice.lang));
     if (preferred) utterance.voice = preferred;
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [language]);
 
   const toggle = useCallback(() => {
     setEnabled((value) => {

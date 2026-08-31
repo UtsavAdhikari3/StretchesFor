@@ -2,8 +2,10 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PainFinder from './app/PainFinder';
 import type { GuideStep } from '../lib/guideFlow';
+import { getLocaleFromPath } from '../i18n';
 
 const { step } = Astro.props as { step: GuideStep };
+const locale = getLocaleFromPath(Astro.url.pathname);
 const metadata = {
   finder: {
     title: 'Locate Your Pain Area | Guide to Stretch',
@@ -29,7 +31,7 @@ const metadata = {
   <section class="border-y border-line bg-surface-raised/20 py-10 sm:py-16">
     <div class="container-shell">
       <h1 class="sr-only">{metadata.title}</h1>
-      <PainFinder initialStep={step} client:only="react" />
+      <PainFinder initialStep={step} locale={locale} client:only="react" />
     </div>
   </section>
 </BaseLayout>

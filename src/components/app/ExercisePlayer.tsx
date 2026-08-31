@@ -4,6 +4,9 @@ import ExerciseMedia from './ExerciseMedia';
 import VoiceToggle from './VoiceToggle';
 import { useSpeechGuidance } from './useSpeechGuidance';
 import { getExercisePath } from '../../lib/exerciseUrls';
+import { localeInfo, localePath, t, type Locale } from '../../i18n';
+import { localizeExercise, localizeRoutine } from '../../i18n/content';
+import { useLocalizedDom } from './useLocalizedDom';
 
 interface Props {
   routine: Routine;
@@ -14,10 +17,15 @@ interface Props {
   voiceSupported?: boolean;
   onVoiceToggle?: () => void;
   onExerciseChange?: (exerciseId: string) => void;
+  locale?: Locale;
 }
 
-export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle, onExerciseChange }: Props) {
-  const ordered = useMemo(() => routine.exerciseIds.map((id) => exercises.find((exercise) => exercise.id === id)).filter(Boolean) as Exercise[], [routine, exercises]);
+export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle, onExerciseChange, locale = 'en' }: Props) {
+  const playerRef = useRef<HTMLElement>(null);
+  useLocalizedDom(playerRef, locale);
+  const translatedRoutine = useMemo(() => localizeRoutine(locale, routine), [locale, routine]);
+  const translatedExercises = useMemo(() => exercises.map((exercise) => localizeExercise(locale, exercise)), [exercises, locale]);
+  const ordered = useMemo(() => translatedRoutine.exerciseIds.map((id) => translatedExercises.find((exercise) => exercise.id === id)).filter(Boolean) as Exercise[], [translatedRoutine, translatedExercises]);
   const initialIndex = Math.max(0, ordered.findIndex((exercise) => exercise.id === initialExerciseId));
   const [index, setIndex] = useState(initialIndex);
   const current = ordered[index];
@@ -25,7 +33,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
   const [running, setRunning] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>('left');
   const halfwayAnnounced = useRef(false);
-  const speech = useSpeechGuidance();
+  const speech = useSpeechGuidance(true, localeInfo[locale].speechLang);
   const activeVoice = voiceEnabled ?? speech.enabled;
   const activeVoiceSupported = voiceSupported ?? speech.supported;
   const toggleVoice = onVoiceToggle ?? speech.toggle;
@@ -75,21 +83,21 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
   useEffect(() => {
     if (!current || !running || halfwayAnnounced.current || remaining !== Math.floor(current.seconds / 2)) return;
     halfwayAnnounced.current = true;
-    if (activeVoice) speech.speak('Halfway. Keep the movement gentle and keep breathing.');
-  }, [remaining, running, current, activeVoice, speech.speak]);
+    if (activeVoice) speech.speak(t(locale, 'Halfway. Keep the movement gentle and keep breathing.'));
+  }, [remaining, running, current, activeVoice, locale, speech.speak]);
 
   useEffect(() => {
     if (remaining !== 0 || !running) return;
     setRunning(false);
-    if (activeVoice) speech.speak('Hold complete. Relax slowly, then continue when you are ready.');
-  }, [remaining, running, activeVoice, speech.speak]);
+    if (activeVoice) speech.speak(t(locale, 'Hold complete. Relax slowly, then continue when you are ready.'));
+  }, [remaining, running, activeVoice, locale, speech.speak]);
 
   if (!current) return null;
 
   const startOrPauseTimer = () => {
     if (running) {
       setRunning(false);
-      if (activeVoice) speech.speak('Timer paused. Resume when you feel ready.');
+      if (activeVoice) speech.speak(t(locale, 'Timer paused. Resume when you feel ready.'));
       return;
     }
     if (remaining === 0) {
@@ -97,7 +105,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       halfwayAnnounced.current = false;
     }
     setRunning(true);
-    if (activeVoice) speech.speak(`${current.name}. ${current.instructions.join(' ')} ${current.dose}. Timer started. Keep breathing and stop if pain worsens.`);
+    if (activeVoice) speech.speak(`${current.name}. ${current.instructions.join(' ')} ${current.dose}. ${t(locale, 'Stop if pain worsens.')}`);
   };
 
   const chooseSide = (nextSide: 'left' | 'right') => {
@@ -105,7 +113,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
     setRemaining(current.seconds);
     setRunning(false);
     halfwayAnnounced.current = false;
-    if (activeVoice) speech.speak(`${nextSide} side. Set up comfortably before starting the timer.`);
+    if (activeVoice) speech.speak(`${t(locale, nextSide === 'left' ? 'Left' : 'Right')}. ${t(locale, 'Set up comfortably before starting the timer.')}`);
   };
 
   const goTo = (nextIndex: number) => {
@@ -117,7 +125,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
 
   const progress = ((index + 1) / ordered.length) * 100;
   return (
-    <section aria-label={`${routine.name} exercise player`} className="surface-card overflow-hidden">
+    <section ref={playerRef} aria-label={`${translatedRoutine.name} ${t(locale, 'exercise player')}`} className="surface-card overflow-hidden">
       <header className="border-b border-line bg-surface-raised/45 px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0" aria-live="polite"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Exercise {index + 1} of {ordered.length}</p><h3 className="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">{current.name}</h3></div>
@@ -151,7 +159,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
 
       <div className="grid gap-8 p-5 sm:p-7 xl:grid-cols-[minmax(0,1.05fr)_minmax(20rem,.95fr)] xl:p-9">
         <div className="min-w-0">
-          <ExerciseMedia exercise={current} />
+          <ExerciseMedia exercise={current} locale={locale} />
           <div className="mx-auto mt-5 grid max-w-[30rem] gap-3 sm:grid-cols-[1fr_auto]">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-canvas p-3">
               <div><p className="text-xs font-medium text-subtle">Guided timer</p><p className="font-mono text-2xl font-semibold tabular-nums">{remaining > 0 ? `0:${String(remaining).padStart(2, '0')}` : 'Complete'}</p></div>
@@ -176,7 +184,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       </div>
 
       <div className="border-t border-danger/30 bg-danger/5 px-5 py-4 text-sm leading-6 text-muted sm:px-7"><strong className="text-danger">Stop if pain worsens.</strong> {current.stopConditions.join('. ')}.</div>
-      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">Previous</button><a href={getExercisePath(current.id)} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">Open exercise guide</a><button type="button" disabled={index === ordered.length - 1} onClick={() => goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">Skip to next</button></footer>
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">Previous</button><a href={localePath(locale, getExercisePath(current.id))} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">Open exercise guide</a><button type="button" disabled={index === ordered.length - 1} onClick={() => goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">Skip to next</button></footer>
     </section>
   );
 }

@@ -1,0 +1,9 @@
+---
+import Page from '../../patterns/[pattern].astro';
+import { locales } from '../../../i18n';
+import { getRegion, patterns } from '../../../data/content';
+export const getStaticPaths = () => locales.flatMap((locale) => patterns.map((pattern) => ({ params: { locale, pattern: pattern.id }, props: { pattern } })));
+const { pattern } = Astro.props;
+const region = getRegion(pattern.regionId);
+---
+<Page pattern={pattern} region={region} />
