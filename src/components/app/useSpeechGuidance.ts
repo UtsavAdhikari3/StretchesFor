@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export function useSpeechGuidance() {
-  const [enabled, setEnabled] = useState(true);
+export function useSpeechGuidance(initialEnabled = true) {
+  const [enabled, setEnabled] = useState(initialEnabled);
   const [supported, setSupported] = useState(false);
 
   useEffect(() => {

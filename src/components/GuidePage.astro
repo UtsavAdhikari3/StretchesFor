@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PainFinder from './app/PainFinder';
+import type { GuideStep } from '../lib/guideFlow';
+
+const { step } = Astro.props as { step: GuideStep };
+const metadata = {
+  finder: {
+    title: 'Locate Your Pain Area | Guide to Stretch',
+    description: 'Start the Guide to Stretch by selecting the body area that hurts and comparing possible symptom patterns.',
+  },
+  questions: {
+    title: 'Safety Screen | Guide to Stretch',
+    description: 'Complete the focused Guide to Stretch safety screen before beginning a movement routine.',
+  },
+  result: {
+    title: 'Safety Result | Guide to Stretch',
+    description: 'Review the next step suggested by your Guide to Stretch safety answers.',
+  },
+  routine: {
+    title: 'Guided Movement Routine | Guide to Stretch',
+    description: 'Follow a gentle mapped movement routine with demonstrations, a timer, and optional voice guidance.',
+  },
+}[step];
+---
+
+<BaseLayout title={metadata.title} description={metadata.description} robots="noindex, follow">
+  <meta slot="head" name="referrer" content="no-referrer" />
+  <section class="border-y border-line bg-surface-raised/20 py-10 sm:py-16">
+    <div class="container-shell">
+      <h1 class="sr-only">{metadata.title}</h1>
+      <PainFinder initialStep={step} client:only="react" />
+    </div>
+  </section>
+</BaseLayout>

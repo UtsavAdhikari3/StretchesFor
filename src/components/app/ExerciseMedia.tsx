@@ -25,7 +25,7 @@ export default function ExerciseMedia({ exercise, resolver = exerciseMediaResolv
     return () => { cancelled = true; controller.abort(); };
   }, [exercise.id, illustration, resolver]);
 
-  if (illustration) return <figure className="overflow-hidden rounded-2xl border border-line bg-surface"><img src={illustration.src} width={illustration.width} height={illustration.height} loading="lazy" alt={illustration.alt} onError={() => setFailed(true)} className={`mx-auto h-auto max-h-[32rem] w-full object-contain ${failed ? 'hidden' : ''}`} />{failed && <Unavailable /> }<figcaption className="border-t border-line px-4 py-3 text-xs leading-5 text-subtle">StretchesFor illustration. Written steps are the authoritative guidance; this illustration has not been clinically reviewed.</figcaption></figure>;
+  if (illustration) return <figure className="overflow-hidden rounded-2xl border border-line bg-surface"><img src={illustration.src} width={illustration.width} height={illustration.height} loading="lazy" alt={illustration.alt} onError={() => setFailed(true)} className={`mx-auto h-auto max-h-[32rem] w-full object-contain ${failed ? 'hidden' : ''}`} />{failed && <Unavailable /> }<figcaption className="border-t border-line px-4 py-3 text-xs leading-5 text-subtle">stretchesfor illustration. Written steps are the authoritative guidance; this illustration has not been clinically reviewed.</figcaption></figure>;
   if (loading) return <div role="status" className="grid min-h-64 place-items-center rounded-2xl border border-line bg-surface text-sm text-subtle">Loading demonstration…</div>;
   if (!media || failed) return <Unavailable />;
   const label = `${exercise.name} exercise demonstration`;

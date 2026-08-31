@@ -292,7 +292,8 @@ export function getConditionContext(condition: ConditionPage) {
 export function getConditionFlowHref(condition: ConditionPage) {
   const params = new URLSearchParams({ region: condition.regionId });
   if (condition.patternId) params.set('pattern', condition.patternId);
-  return `/?${params.toString()}#pain-finder`;
+  if (condition.patternId) params.set('question', '0');
+  return `/guide/${condition.patternId ? 'screen' : 'locate'}/?${params.toString()}`;
 }
 
-export const getExerciseFlowHref = (exerciseId: string) => `/?exercise=${encodeURIComponent(exerciseId)}#pain-finder`;
+export const getExerciseFlowHref = (exerciseId: string) => `/guide/move/?exercise=${encodeURIComponent(exerciseId)}&entry=exercise`;

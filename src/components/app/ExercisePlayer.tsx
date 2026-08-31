@@ -13,9 +13,10 @@ interface Props {
   voiceEnabled?: boolean;
   voiceSupported?: boolean;
   onVoiceToggle?: () => void;
+  onExerciseChange?: (exerciseId: string) => void;
 }
 
-export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle }: Props) {
+export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle, onExerciseChange }: Props) {
   const ordered = useMemo(() => routine.exerciseIds.map((id) => exercises.find((exercise) => exercise.id === id)).filter(Boolean) as Exercise[], [routine, exercises]);
   const initialIndex = Math.max(0, ordered.findIndex((exercise) => exercise.id === initialExerciseId));
   const [index, setIndex] = useState(initialIndex);
@@ -35,6 +36,17 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
     setSide('left');
     halfwayAnnounced.current = false;
   }, [current]);
+
+  useEffect(() => {
+    if (!onExerciseChange) return;
+    const restoreExerciseFromUrl = () => {
+      const exerciseId = new URLSearchParams(window.location.search).get('exercise');
+      const nextIndex = ordered.findIndex((exercise) => exercise.id === exerciseId);
+      if (nextIndex >= 0) setIndex(nextIndex);
+    };
+    window.addEventListener('popstate', restoreExerciseFromUrl);
+    return () => window.removeEventListener('popstate', restoreExerciseFromUrl);
+  }, [onExerciseChange, ordered]);
 
   useEffect(() => {
     if (!running) return;
@@ -99,6 +111,8 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
   const goTo = (nextIndex: number) => {
     speech.stop();
     setIndex(nextIndex);
+    const nextExercise = ordered[nextIndex];
+    if (nextExercise) onExerciseChange?.(nextExercise.id);
   };
 
   const progress = ((index + 1) / ordered.length) * 100;

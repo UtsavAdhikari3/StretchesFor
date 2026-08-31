@@ -1,15 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import BodyModel from './BodyModel';
 import ExercisePlayer from './ExercisePlayer';
 import VoiceToggle from './VoiceToggle';
 import { useSpeechGuidance } from './useSpeechGuidance';
-import { bodyRegionGroups, bodyRegions, getBodyRegionHotspot, type BodyRegionHotspot } from '../../data/bodyRegions';
+import { bodyRegionGroups, bodyRegions, getBodyRegionHotspot } from '../../data/bodyRegions';
 import { getRegion, patterns, questionsFor } from '../../data/content';
 import { exercises, routines } from '../../data/exercises';
 import type { Answer, PainPattern } from '../../data/types';
 import { evaluateAnswers, type AnswerMap } from '../../lib/triage';
-
-type Step = 'finder' | 'questions' | 'result' | 'routine';
+import { createGuideHref, parseGuideState, type GuideFlowState, type GuideStep } from '../../lib/guideFlow';
 
 const answerOptions: Array<{ value: Answer; label: string; hint: string; symbol: string }> = [
   { value: 'yes', label: 'Yes', hint: 'This is present', symbol: '✓' },
@@ -24,107 +23,180 @@ const flowSteps = [
   { id: 'routine', label: 'Move' },
 ] as const;
 
-export default function PainFinder() {
+interface Props {
+  initialStep: GuideStep;
+  initialSearch?: string;
+  onNavigate?: (href: string) => void;
+}
+
+export default function PainFinder({ initialStep, initialSearch, onNavigate }: Props) {
+  const guideSectionRef = useRef<HTMLDivElement>(null);
   const patternSelectionRef = useRef<HTMLDivElement>(null);
-  const [selectedHotspot, setSelectedHotspot] = useState<BodyRegionHotspot>();
-  const [pattern, setPattern] = useState<PainPattern>();
-  const [step, setStep] = useState<Step>('finder');
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<AnswerMap>({});
-  const [initialExerciseId, setInitialExerciseId] = useState<string>();
-  const [needsSafetyCheck, setNeedsSafetyCheck] = useState(false);
-  const speech = useSpeechGuidance();
+  const urlState = useMemo(
+    () => parseGuideState(initialSearch ?? (typeof window === 'undefined' ? '' : window.location.search)),
+    [initialSearch],
+  );
+  const directExercise = useMemo(
+    () => urlState.exercise ? exercises.find((item) => item.id === urlState.exercise) : undefined,
+    [urlState.exercise],
+  );
+  const directRoutine = useMemo(
+    () => directExercise
+      ? routines.find((item) => item.regionId === directExercise.regionId && item.exerciseIds.includes(directExercise.id))
+        ?? routines.find((item) => item.exerciseIds.includes(directExercise.id))
+      : undefined,
+    [directExercise],
+  );
+  const directPattern = useMemo(
+    () => directRoutine ? patterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined,
+    [directRoutine],
+  );
+  const directHotspot = useMemo(
+    () => directExercise ? bodyRegions.find((item) => item.contentRegionId === directExercise.regionId) : undefined,
+    [directExercise],
+  );
+  const selectedHotspot = useMemo(
+    () => directHotspot ?? (urlState.region ? getBodyRegionHotspot(urlState.region) ?? bodyRegions.find((item) => item.contentRegionId === urlState.region) : undefined),
+    [directHotspot, urlState.region],
+  );
+  const pattern = useMemo(
+    () => directPattern ?? (urlState.pattern ? patterns.find((item) => item.id === urlState.pattern && (!selectedHotspot || item.regionId === selectedHotspot.contentRegionId)) : undefined),
+    [directPattern, selectedHotspot, urlState.pattern],
+  );
+  const step = initialStep;
+  const answers: AnswerMap = urlState.answers ?? {};
+  const initialExerciseId = directExercise?.id;
+  const needsSafetyCheck = urlState.entry === 'exercise';
+  const speech = useSpeechGuidance(false);
   const region = useMemo(() => getRegion(selectedHotspot?.contentRegionId ?? ''), [selectedHotspot]);
   const regionPatterns = useMemo(() => patterns.filter((item) => item.regionId === region?.id), [region]);
   const questions = useMemo(() => pattern ? questionsFor(pattern) : [], [pattern]);
+  const firstUnansweredQuestionIndex = questions.findIndex((question) => answers[question.id as keyof AnswerMap] === undefined);
+  const lastAccessibleQuestionIndex = firstUnansweredQuestionIndex >= 0 ? firstUnansweredQuestionIndex : Math.max(questions.length - 1, 0);
+  const questionIndex = Math.min(urlState.question ?? 0, lastAccessibleQuestionIndex);
   const result = useMemo(() => pattern ? evaluateAnswers(pattern, answers) : undefined, [pattern, answers]);
-  const routine = useMemo(() => pattern?.routineId ? routines.find((item) => item.id === pattern.routineId) : undefined, [pattern]);
+  const routine = useMemo(() => directRoutine ?? (pattern?.routineId ? routines.find((item) => item.id === pattern.routineId) : undefined), [directRoutine, pattern]);
+  const canShowResult = pattern?.action === 'urgent-care' || answers.emergency === 'yes' || firstUnansweredQuestionIndex < 0;
+  const canShowRoutine = needsSafetyCheck || firstUnansweredQuestionIndex < 0;
+
+  const navigate = useCallback((nextStep: GuideStep, nextState: GuideFlowState = {}) => {
+    speech.stop();
+    const href = createGuideHref(nextStep, nextState);
+    if (onNavigate) onNavigate(href);
+    else window.location.assign(href);
+  }, [onNavigate, speech.stop]);
+
+  const currentState = useMemo<GuideFlowState>(() => ({
+    region: selectedHotspot?.id,
+    pattern: pattern?.id,
+    question: step === 'questions' ? questionIndex : urlState.question,
+    answers,
+    exercise: initialExerciseId,
+    entry: urlState.entry,
+  }), [answers, initialExerciseId, pattern?.id, questionIndex, selectedHotspot?.id, step, urlState.entry, urlState.question]);
 
   const chooseRegion = useCallback((id: string) => {
     const next = getBodyRegionHotspot(id);
     if (!next) return;
-    setSelectedHotspot(next);
-    setPattern(undefined);
-    setAnswers({});
-    setQuestionIndex(0);
-    setInitialExerciseId(undefined);
-    setNeedsSafetyCheck(false);
-    setStep('finder');
-  }, []);
+    navigate('finder', { region: next.id });
+  }, [navigate]);
 
   const choosePattern = (next: PainPattern) => {
-    setPattern(next);
-    setAnswers({});
-    setQuestionIndex(0);
-    setInitialExerciseId(undefined);
-    setNeedsSafetyCheck(false);
-    setStep(next.action === 'urgent-care' ? 'result' : 'questions');
+    navigate(next.action === 'urgent-care' ? 'result' : 'questions', {
+      region: selectedHotspot?.id,
+      pattern: next.id,
+      question: next.action === 'urgent-care' ? undefined : 0,
+      answers: {},
+    });
   };
 
   const answerQuestion = (answer: Answer) => {
     const question = questions[questionIndex];
     const nextAnswers = { ...answers, [question.id]: answer };
-    setAnswers(nextAnswers);
     if (question.id === 'emergency' && answer === 'yes') {
-      setStep('result');
+      navigate('result', { ...currentState, question: questionIndex, answers: nextAnswers, exercise: undefined, entry: undefined });
       return;
     }
-    if (questionIndex === questions.length - 1) setStep('result');
-    else setQuestionIndex((value) => value + 1);
+    if (questionIndex === questions.length - 1) navigate('result', { ...currentState, question: questionIndex, answers: nextAnswers, exercise: undefined, entry: undefined });
+    else navigate('questions', { ...currentState, question: questionIndex + 1, answers: nextAnswers, exercise: undefined, entry: undefined });
   };
 
   const reset = () => {
-    speech.stop();
-    setSelectedHotspot(undefined);
-    setPattern(undefined);
-    setAnswers({});
-    setQuestionIndex(0);
-    setInitialExerciseId(undefined);
-    setNeedsSafetyCheck(false);
-    setStep('finder');
+    navigate('finder');
   };
 
   const changeRegion = () => {
-    setSelectedHotspot(undefined);
-    setPattern(undefined);
-    setAnswers({});
-    setQuestionIndex(0);
-    setInitialExerciseId(undefined);
-    setNeedsSafetyCheck(false);
-    setStep('finder');
+    navigate('finder');
   };
 
+  const goToPreviousQuestion = () => {
+    if (questionIndex === 0) {
+      navigate('finder', { region: selectedHotspot?.id });
+      return;
+    }
+    const previousQuestionIndex = questionIndex - 1;
+    const previousAnswers = { ...answers };
+    for (const question of questions.slice(previousQuestionIndex)) delete previousAnswers[question.id as keyof AnswerMap];
+    navigate('questions', {
+      ...currentState,
+      question: previousQuestionIndex,
+      answers: previousAnswers,
+      exercise: undefined,
+      entry: undefined,
+    });
+  };
+
+  const updateRoutineExercise = useCallback((exerciseId: string) => {
+    const href = createGuideHref('routine', { ...currentState, question: undefined, exercise: exerciseId });
+    window.history.pushState({}, '', href);
+  }, [currentState]);
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const exerciseId = params.get('exercise');
-    const regionId = params.get('region');
-    const patternId = params.get('pattern');
+    const section = guideSectionRef.current;
+    if (!section || typeof IntersectionObserver === 'undefined') return;
 
-    if (exerciseId) {
-      const exercise = exercises.find((item) => item.id === exerciseId);
-      const directRoutine = exercise ? routines.find((item) => item.exerciseIds.includes(exercise.id)) : undefined;
-      const directPattern = directRoutine ? patterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined;
-      const hotspot = exercise ? bodyRegions.find((item) => item.contentRegionId === exercise.regionId) : undefined;
-      if (exercise && directRoutine && directPattern && hotspot) {
-        setSelectedHotspot(hotspot);
-        setPattern(directPattern);
-        setInitialExerciseId(exercise.id);
-        setNeedsSafetyCheck(true);
-        setStep('routine');
-        return;
-      }
-    }
+    let isVisible = false;
+    let hasScrolled = window.scrollY > 0;
+    const enableWhenReady = () => {
+      if (!isVisible || !hasScrolled) return;
+      speech.setEnabled(true);
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+    const handleScroll = () => {
+      hasScrolled = true;
+      enableWhenReady();
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+      enableWhenReady();
+    }, { threshold: 0.1 });
 
-    if (!regionId) return;
-    const hotspot = getBodyRegionHotspot(regionId) ?? bodyRegions.find((item) => item.contentRegionId === regionId);
-    if (!hotspot) return;
-    setSelectedHotspot(hotspot);
-    const selectedPattern = patternId ? patterns.find((item) => item.id === patternId && item.regionId === hotspot.contentRegionId) : undefined;
-    if (selectedPattern) {
-      setPattern(selectedPattern);
-      setStep(selectedPattern.action === 'urgent-care' ? 'result' : 'questions');
+    observer.observe(section);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [speech.setEnabled]);
+
+  useEffect(() => {
+    if (step === 'finder') return;
+    if (step === 'routine' && directExercise && directRoutine && directPattern && directHotspot) return;
+    if (!selectedHotspot || !pattern) {
+      navigate('finder', selectedHotspot ? { region: selectedHotspot.id } : {});
+      return;
     }
-  }, []);
+    if (step === 'questions' && pattern.action === 'urgent-care') {
+      navigate('result', currentState);
+      return;
+    }
+    if (firstUnansweredQuestionIndex >= 0 && answers.emergency !== 'yes' && (step === 'result' || (step === 'routine' && !needsSafetyCheck))) {
+      navigate('questions', { ...currentState, question: firstUnansweredQuestionIndex, exercise: undefined, entry: undefined });
+      return;
+    }
+    if (step === 'routine' && !routine) navigate('result', currentState);
+  }, [answers.emergency, currentState, directExercise, directHotspot, directPattern, directRoutine, firstUnansweredQuestionIndex, navigate, needsSafetyCheck, pattern, routine, selectedHotspot, step]);
 
   useEffect(() => {
     if (!selectedHotspot || step !== 'finder') return;
@@ -151,9 +223,9 @@ export default function PainFinder() {
   const isChoosingRegion = selectedHotspot === undefined;
 
   return (
-    <div className="surface-card overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,.5)]">
+    <div ref={guideSectionRef} className="surface-card overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,.5)]">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line bg-surface-raised/40 px-5 py-4 sm:px-7">
-        <div className="min-w-0"><div className="flex items-center gap-2"><span className="size-2 rounded-full bg-success" aria-hidden="true" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Private browser session</p></div><p className="mt-1 text-sm text-muted">Answers exist only in temporary JavaScript memory.</p></div>
+        <div className="min-w-0"><div className="flex items-center gap-2"><span className="size-2 rounded-full bg-success" aria-hidden="true" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">URL-based session</p></div><p className="mt-1 text-sm text-muted">Your choices stay in the URL so refresh and browser navigation keep your place.</p></div>
         <div className="flex flex-wrap gap-2"><VoiceToggle enabled={speech.enabled} supported={speech.supported} onToggle={speech.toggle} label="Voice guide" />{(selectedHotspot || step !== 'finder') && <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">Start over</button>}</div>
       </div>
       <div className="h-1 bg-line" aria-hidden="true"><div className="h-full bg-brand transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
@@ -216,13 +288,13 @@ export default function PainFinder() {
                 {answerOptions.map((option) => <button key={option.value} type="button" aria-label={option.label} onClick={() => answerQuestion(option.value)} className="group min-h-20 rounded-xl border border-line bg-surface px-5 text-left transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-brand hover:bg-brand/5 motion-reduce:hover:translate-y-0"><span className="flex items-center justify-between gap-3"><span className="text-base font-semibold">{option.label}</span><span className="grid size-7 place-items-center rounded-full border border-line bg-canvas text-xs font-semibold text-subtle group-hover:border-brand group-hover:text-brand" aria-hidden="true">{option.symbol}</span></span><span className="mt-1 block text-xs text-subtle">{option.hint}</span></button>)}
               </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={() => questionIndex > 0 ? setQuestionIndex((value) => value - 1) : setStep('finder')} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-muted transition-colors hover:text-ink">← {questionIndex > 0 ? 'Previous question' : 'Back to possible causes'}</button></div>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={goToPreviousQuestion} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-muted transition-colors hover:text-ink">← {questionIndex > 0 ? 'Previous question' : 'Back to possible causes'}</button></div>
           </section>
         )}
 
-        {step === 'result' && result && pattern && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => { setNeedsSafetyCheck(false); setStep('routine'); }} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
+        {step === 'result' && result && pattern && canShowResult && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => navigate('routine', { ...currentState, question: undefined, exercise: routine.exerciseIds[0], entry: undefined })} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
 
-        {step === 'routine' && routine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => { setAnswers({}); setQuestionIndex(0); setStep(needsSafetyCheck ? 'questions' : 'result'); }} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={exercises} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} /></section>}
+        {step === 'routine' && routine && canShowRoutine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => navigate(needsSafetyCheck ? 'questions' : 'result', needsSafetyCheck ? { region: selectedHotspot?.id, pattern: pattern?.id, question: 0, answers: {} } : { ...currentState, exercise: undefined, entry: undefined })} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={exercises} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} onExerciseChange={updateRoutineExercise} /></section>}
       </div>
     </div>
   );

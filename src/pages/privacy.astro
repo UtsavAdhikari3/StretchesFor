@@ -15,30 +15,31 @@ const sections = [
 
 <ContentPage
   title="Privacy policy"
-  description="Learn how StretchesFor handles questionnaire answers, exercise media requests, technical logs, and voluntary email contact."
+  description="Learn how stretchesfor handles questionnaire answers, exercise media requests, technical logs, and voluntary email contact."
   eyebrow="No account. No health profile."
   heading="Privacy by absence."
   intro="The simplest way to protect sensitive answers is not to collect them. This policy explains what stays in your browser, what limited technical data other services may receive, and what happens if you contact us."
   sections={sections}
-  lastUpdated="30 August 2026"
+  lastUpdated="31 August 2026"
   tone="success"
 >
   <h2 id="answers">Questionnaire answers</h2>
-  <p>Your body-area choice and questionnaire answers exist only in the current page’s memory. They are not sent to an API, written to a database, placed in the URL, or saved in browser storage. Refreshing or closing the page clears them.</p>
+  <p>Your body-area choice, selected symptom pattern, questionnaire answers, and flow progress are placed in the Guide to Stretch URL. This lets you refresh, use browser back and forward, or directly reopen the same step without losing your place. The site does not attach this state to an account or write it to an application database.</p>
+  <p>Because this information is in the URL, it can appear in browser history, bookmarks, copied links, screenshots, and hosting request logs. Anyone you share the full URL with can read and reopen those choices. Use “Start over” to return to a clean guide URL, and use your browser’s history controls if you want to remove previously visited guide URLs.</p>
 
   <h2 id="browser-features">Browser features</h2>
   <p>The theme preference may be saved in your browser so the site can remember whether you chose light or dark mode. This setting does not contain health information.</p>
-  <p>Optional voice guidance uses the browser’s built-in speech synthesis feature. StretchesFor does not record your voice, request microphone access, or send questionnaire text to its own backend.</p>
+  <p>Optional voice guidance uses the browser’s built-in speech synthesis feature. stretchesfor does not record your voice, request microphone access, or send questionnaire text to its own backend.</p>
 
   <h2 id="media">Exercise media and third parties</h2>
-  <p>When you open an exercise, your browser may request demonstration metadata or media from Wger, ExerciseDB, or StretchesFor’s first-party media domain. Each request contains only a reviewed exercise identifier or an immutable media path—never your body-area choice, questionnaire answers, symptoms, safety result, timer state, or voice setting.</p>
+  <p>When you open an exercise, your browser may request demonstration metadata or media from Wger, ExerciseDB, or stretchesfor’s first-party media domain. Each request contains only a reviewed exercise identifier or an immutable media path—never your body-area choice, questionnaire answers, symptoms, safety result, timer state, or voice setting.</p>
   <p>Like any direct web request, the media or infrastructure provider may receive basic technical details such as your IP address, browser information, and request time. Their handling of this information is governed by their own policies.</p>
 
   <h2 id="analytics">Analytics, advertising, and cookies</h2>
   <p>This version does not use third-party analytics, advertising pixels, behavioural tracking, or marketing cookies. There are no user accounts, saved routines, or medical records.</p>
 
   <h2 id="logs">Hosting logs</h2>
-  <p>Like most websites, the hosting provider may process basic technical request logs for security, abuse prevention, and reliable delivery. StretchesFor does not combine those logs with questionnaire answers because questionnaire answers never leave the browser.</p>
+  <p>Like most websites, the hosting provider may process basic technical request logs for security, abuse prevention, and reliable delivery. A request log can include the requested path and query string, which means a directly opened or refreshed Guide to Stretch URL may include the choices described above.</p>
 
   <h2 id="email">Email contact</h2>
   <p>If you email us, we receive the address, message, and other information you choose to include. Email is not an appropriate place for sensitive medical information, so please do not send symptoms, diagnoses, medical records, or other health details. Messages may be retained as reasonably needed to respond, maintain records, prevent abuse, or meet legal obligations.</p>
@@ -47,6 +48,8 @@ const sections = [
   <ul>
     <li>You can use the educational content without creating an account.</li>
     <li>You can decline optional voice guidance and still use the exercise instructions.</li>
+    <li>You can avoid sharing questionnaire choices by not copying or sending the full Guide to Stretch URL.</li>
+    <li>You can use “Start over” for a clean current URL and clear earlier guide URLs with your browser’s history controls.</li>
     <li>You can clear the saved theme preference through your browser’s site-data controls.</li>
     <li>You can avoid sending personal information by not contacting us by email.</li>
   </ul>

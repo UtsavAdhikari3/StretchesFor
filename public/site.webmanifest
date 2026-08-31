@@ -1,6 +1,6 @@
 {
-  "name": "StretchesFor",
-  "short_name": "StretchesFor",
+  "name": "stretchesfor",
+  "short_name": "stretchesfor",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

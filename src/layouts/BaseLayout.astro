@@ -21,7 +21,7 @@ const {
   description,
   canonicalPath = Astro.url.pathname,
   image = '/social-card.png',
-  imageAlt = 'StretchesFor guided stretching and mobility tool',
+  imageAlt = 'stretchesfor guided stretching and mobility tool',
   imageWidth = 1200,
   imageHeight = 630,
   imageType,
@@ -31,15 +31,15 @@ const {
 const canonical = new URL(canonicalPath, Astro.site);
 const socialImage = new URL(image, Astro.site);
 const socialImageType = imageType ?? (image.endsWith('.webp') ? 'image/webp' : image.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
-const fullTitle = title === 'StretchesFor' ? title : `${title} | StretchesFor`;
+const fullTitle = title === 'stretchesfor' ? title : `${title} | stretchesfor`;
 ---
 
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <meta name="theme-color" content="#010102" />
+    <meta name="theme-color" content="#f7f8fa" />
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="generator" content={Astro.generator} />
@@ -49,10 +49,10 @@ const fullTitle = title === 'StretchesFor' ? title : `${title} | StretchesFor`;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <meta name="apple-mobile-web-app-title" content="StretchesFor" />
+    <meta name="apple-mobile-web-app-title" content="stretchesfor" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta property="og:type" content={ogType} />
-    <meta property="og:site_name" content="StretchesFor" />
+    <meta property="og:site_name" content="stretchesfor" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
@@ -72,7 +72,7 @@ const fullTitle = title === 'StretchesFor' ? title : `${title} | StretchesFor`;
     <script is:inline>
       (() => {
         const storageKey = 'stretchesfor-theme';
-        let theme = 'dark';
+        let theme = 'light';
 
         try {
           const savedTheme = localStorage.getItem(storageKey);

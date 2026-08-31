@@ -17,7 +17,7 @@ export function resolveLocalCandidates(
 
   const common = {
     id: `local:${asset.version}`,
-    name: 'StretchesFor clinically reviewed demonstration',
+    name: 'stretchesfor clinically reviewed demonstration',
     instructions: [],
     targetMuscles: [],
   };

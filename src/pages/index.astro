@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PainFinder from '../components/app/PainFinder';
 import RegionCard from '../components/RegionCard.astro';
 import HomeFaq from '../components/HomeFaq.astro';
+import PainFinder from '../components/app/PainFinder';
 import { regions } from '../data/content';
 import { getHomeFaqSchema } from '../data/homeFaqs';
 
@@ -14,7 +14,7 @@ const structuredData = {
       '@type': 'WebSite',
       '@id': 'https://stretchesfor.com/#website',
       url: 'https://stretchesfor.com/',
-      name: 'StretchesFor',
+      name: 'stretchesfor',
       alternateName: 'Stretches For',
       description,
       inLanguage: 'en',
@@ -22,7 +22,7 @@ const structuredData = {
     {
       '@type': 'WebApplication',
       '@id': 'https://stretchesfor.com/#tool',
-      name: 'StretchesFor guided movement tool',
+      name: 'stretchesfor guided movement tool',
       url: 'https://stretchesfor.com/',
       description,
       applicationCategory: 'HealthApplication',
@@ -52,8 +52,8 @@ const structuredData = {
           <a href="/medical-disclaimer" class="inline-flex min-h-12 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read the safety approach</a>
         </div>
         <div class="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-xs text-subtle">
-          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> Temporary browser state</span>
-          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> No health data stored</span>
+          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> Refresh-safe URL progress</span>
+          <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> No account or health profile</span>
           <span class="flex items-center gap-2"><span class="text-success" aria-hidden="true">✓</span> Works without a backend</span>
         </div>
       </div>
@@ -106,7 +106,7 @@ const structuredData = {
             </div>
           </div>
         </div>
-        <div class="flex items-center justify-between gap-4 border-t border-line px-4 py-3 text-xs text-subtle"><span>Nothing leaves this page</span><span class="text-success">Session private</span></div>
+        <div class="flex items-center justify-between gap-4 border-t border-line px-4 py-3 text-xs text-subtle"><span>Progress follows the URL</span><span class="text-success">No account needed</span></div>
       </div>
     </div>
   </section>
@@ -135,8 +135,15 @@ const structuredData = {
     </div>
   </section>
 
-  <section id="pain-finder" class="scroll-mt-20 border-y border-line bg-surface-raised/20 py-12 sm:py-20">
-    <div class="container-shell"><PainFinder client:visible={{ rootMargin: '400px' }} /></div>
+  <section id="pain-finder" class="scroll-mt-20 border-y border-line bg-surface-raised/20 py-16 sm:py-24">
+    <div class="container-shell">
+      <div class="mb-10 text-center">
+        <p class="text-sm font-semibold text-brand">Guide to Stretch</p>
+        <h2 class="mx-auto mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-5xl">Start with the human model.</h2>
+        <p class="mx-auto mt-5 max-w-2xl text-pretty leading-7 text-muted">Choose the area that hurts here. The next stages continue on dedicated pages, with your selection and progress kept in the URL.</p>
+      </div>
+      <PainFinder initialStep="finder" client:only="react" />
+    </div>
   </section>
 
   <section class="container-shell py-20 sm:py-28">
@@ -153,8 +160,8 @@ const structuredData = {
       <div class="max-w-3xl">
         <p class="text-sm font-semibold text-brand">About the tool</p>
         <h2 id="about-tool-heading" class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Find stretches for the way your body feels today</h2>
-        <p class="mt-5 text-pretty text-lg leading-8 text-muted">StretchesFor is a free, private starting-point tool for people who want clear movement guidance without creating an account or sorting through a confusing exercise library. Choose the area that hurts on the interactive body, compare a few plain-language pain patterns, and complete a short safety screen. If gentle movement is a reasonable next step, the tool builds a small routine with visual demonstrations, a timer, dosage guidance, easier options, and optional spoken coaching.</p>
-        <p class="mt-5 text-pretty leading-7 text-muted">Rather than presenting every movement at once, StretchesFor narrows the library from the area and pattern you choose. Each result explains why a routine may fit, what to watch for, and when to stop. You stay in control: review the instructions before starting, pause whenever needed, switch to an easier option, or leave the session without saving personal health information.</p>
+        <p class="mt-5 text-pretty text-lg leading-8 text-muted">stretchesfor is a free, private starting-point tool for people who want clear movement guidance without creating an account or sorting through a confusing exercise library. Choose the area that hurts on the interactive body, compare a few plain-language pain patterns, and complete a short safety screen. If gentle movement is a reasonable next step, the tool builds a small routine with visual demonstrations, a timer, dosage guidance, easier options, and optional spoken coaching.</p>
+        <p class="mt-5 text-pretty leading-7 text-muted">Rather than presenting every movement at once, stretchesfor narrows the library from the area and pattern you choose. Each result explains why a routine may fit, what to watch for, and when to stop. You stay in control: review the instructions before starting, pause whenever needed, switch to an easier option, or leave the session without saving personal health information.</p>
       </div>
 
       <div class="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
@@ -172,14 +179,14 @@ const structuredData = {
           <div class="mt-4 space-y-5 leading-7 text-muted">
             <p>Context matters. If you are searching for <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-back">stretches for lower back pain after sitting</a>, the tool first checks whether gentle walking or a position change feels comfortable before offering low-load back movements. For <a class="font-medium text-brand hover:text-brand-hover" href="/body/neck">stretches for neck pain from sleeping</a>, it favors small, controlled motion rather than pulling hard on a stiff neck. The same conservative approach applies to <a class="font-medium text-brand hover:text-brand-hover" href="/body/upper-back">stretches for back pain at work</a>, where regular movement breaks may be more useful than forcing one deep stretch.</p>
             <p>Runners can explore <a class="font-medium text-brand hover:text-brand-hover" href="/body/hip">stretches for hip pain after running</a> or <a class="font-medium text-brand hover:text-brand-hover" href="/body/knee">stretches for knee pain after running</a>. Before a routine appears, the safety questions check for a major injury, rapid worsening, inability to bear weight, unexplained swelling, and other warning signs. This helps separate a gentle self-guided starting point from symptoms that deserve timely care.</p>
-            <p>Each routine stays intentionally short. Instructions explain how to set up, move, and return; timers help you avoid guessing; common-mistake notes discourage forcing range; and easier alternatives make the session adaptable. Your selections and questionnaire answers remain in temporary browser memory and are not sent to a StretchesFor account or health profile.</p>
+            <p>Each routine stays intentionally short. Instructions explain how to set up, move, and return; timers help you avoid guessing; common-mistake notes discourage forcing range; and easier alternatives make the session adaptable. Your selections and questionnaire answers travel between steps in the URL and are not attached to a stretchesfor account or health profile.</p>
           </div>
         </div>
       </div>
 
       <div class="mt-14 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
         <div class="bg-surface p-6">
-          <h3 class="font-semibold">Is StretchesFor a diagnosis?</h3>
+          <h3 class="font-semibold">Is stretchesfor a diagnosis?</h3>
           <p class="mt-3 text-sm leading-6 text-muted">No. It organizes educational patterns and movement options. It cannot identify the cause of pain or replace an examination by a qualified healthcare professional.</p>
         </div>
         <div class="bg-surface p-6">
@@ -201,7 +208,7 @@ const structuredData = {
       <div>
         <p class="text-sm font-semibold text-brand">No hidden health profile</p>
         <h2 class="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em]">Your answers disappear when this page closes.</h2>
-        <p class="mt-3 max-w-2xl text-pretty leading-7 text-muted">StretchesFor does not create an account, store a history, or send questionnaire answers to a server. Voice guidance uses your browser’s built-in speech engine.</p>
+        <p class="mt-3 max-w-2xl text-pretty leading-7 text-muted">stretchesfor does not create an account, store a history, or send questionnaire answers to a server. Voice guidance uses your browser’s built-in speech engine.</p>
       </div>
       <a href="/privacy" class="inline-flex min-h-12 items-center justify-center rounded-lg border border-line bg-canvas px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read privacy details</a>
     </div>

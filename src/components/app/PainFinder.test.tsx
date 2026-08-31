@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import PainFinder from './PainFinder';
@@ -8,65 +8,132 @@ vi.mock('./BodyModel', () => ({ default: () => <div data-testid="body-model" /> 
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   window.history.replaceState({}, '', '/');
 });
 
-describe('PainFinder', () => {
-  it('moves directly from body selection to pattern choices and can change the area', async () => {
+describe('PainFinder URL-driven pages', () => {
+  it('enables voice guidance only after the visible guide has been scrolled to', async () => {
+    let intersectionCallback: IntersectionObserverCallback | undefined;
+    vi.stubGlobal('speechSynthesis', {
+      cancel: vi.fn(),
+      getVoices: vi.fn(() => []),
+      speak: vi.fn(),
+    });
+    vi.stubGlobal('SpeechSynthesisUtterance', class {
+      rate = 1;
+      pitch = 1;
+      volume = 1;
+      constructor(public text: string) {}
+    });
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: IntersectionObserverCallback) { intersectionCallback = callback; }
+      observe() { intersectionCallback?.([{ isIntersecting: true } as IntersectionObserverEntry], this as unknown as IntersectionObserver); }
+      disconnect() {}
+      unobserve() {}
+      takeRecords() { return []; }
+      root = null;
+      rootMargin = '0px';
+      thresholds = [0.1];
+    });
+
+    render(<PainFinder initialStep="finder" initialSearch="" onNavigate={vi.fn()} />);
+    expect(await screen.findByRole('button', { name: 'Voice guide: off' })).toBeTruthy();
+
+    window.dispatchEvent(new Event('scroll'));
+
+    expect(await screen.findByRole('button', { name: 'Voice guide: on' })).toBeTruthy();
+  });
+
+  it('navigates to a URL-backed region selection', async () => {
     const user = userEvent.setup();
-    render(<PainFinder />);
+    const onNavigate = vi.fn();
+    render(<PainFinder initialStep="finder" initialSearch="" onNavigate={onNavigate} />);
 
     await user.click(screen.getByRole('button', { name: 'Select Chest' }));
+
+    expect(onNavigate).toHaveBeenCalledWith('/guide/locate/?region=chest');
+  });
+
+  it('restores a selected region on the locate page', () => {
+    render(<PainFinder initialStep="finder" initialSearch="?region=chest" onNavigate={vi.fn()} />);
 
     expect(screen.getByRole('heading', { name: 'Chest' })).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Which symptom pattern sounds closest?' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Choose from the list' })).toBeNull();
-
-    await user.click(screen.getByRole('button', { name: 'Change pain area' }));
-
-    expect(screen.getByRole('heading', { name: 'Tap where it hurts.' })).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Choose from the list' })).toBeTruthy();
   });
 
-  it('completes a movement-appropriate lower-back path', async () => {
+  it('carries each safety answer and the question index into the next URL', async () => {
     const user = userEvent.setup();
-    render(<PainFinder />);
-    await user.click(screen.getByRole('button', { name: 'Select Lower back' }));
-    await user.click(screen.getAllByRole('button', { name: 'This sounds like me' })[0]);
+    const onNavigate = vi.fn();
+    render(<PainFinder
+      initialStep="questions"
+      initialSearch="?region=lower-back&pattern=nonspecific-lower-back&question=0"
+      onNavigate={onNavigate}
+    />);
 
-    for (const answer of ['No', 'No', 'No', 'No', 'Yes']) {
-      await user.click(screen.getByRole('button', { name: answer }));
-    }
+    await user.click(screen.getByRole('button', { name: 'No' }));
+
+    expect(onNavigate).toHaveBeenCalledWith('/guide/screen/?region=lower-back&pattern=nonspecific-lower-back&question=1&emergency=no');
+  });
+
+  it('restores a completed movement-appropriate result from URL parameters', () => {
+    render(<PainFinder
+      initialStep="result"
+      initialSearch="?region=lower-back&pattern=nonspecific-lower-back&question=4&emergency=no&trauma=no&systemic=no&function=no&match=yes"
+      onNavigate={vi.fn()}
+    />);
 
     expect(screen.getByRole('heading', { name: 'Gentle movement may be appropriate' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Start Lower-back ease/ })).toBeTruthy();
   });
 
-  it('stops immediately when a chest emergency warning is selected', async () => {
-    const user = userEvent.setup();
-    render(<PainFinder />);
-    await user.click(screen.getByRole('button', { name: 'Select Chest' }));
-    await user.click(screen.getAllByRole('button', { name: 'This sounds like me' })[0]);
-    await user.click(screen.getByRole('button', { name: 'Yes' }));
+  it('restores an urgent early-exit result from its URL', () => {
+    render(<PainFinder
+      initialStep="result"
+      initialSearch="?region=chest&pattern=pectoral-muscle-strain&question=0&emergency=yes"
+      onNavigate={vi.fn()}
+    />);
 
     expect(screen.getByRole('heading', { name: 'Possible urgent warning sign' })).toBeTruthy();
     expect(screen.queryByText(/Start chest-wall routine/)).toBeNull();
   });
 
-  it('preselects a condition and starts its safety screen from URL parameters', async () => {
-    window.history.replaceState({}, '', '/?region=lower-back&pattern=nonspecific-lower-back#pain-finder');
-    render(<PainFinder />);
+  it('sends an incomplete direct result URL back to the first unanswered question', async () => {
+    const onNavigate = vi.fn();
+    render(<PainFinder
+      initialStep="result"
+      initialSearch="?region=lower-back&pattern=nonspecific-lower-back&question=4&match=yes"
+      onNavigate={onNavigate}
+    />);
 
-    expect(await screen.findByText('Condition-specific safety screen')).toBeTruthy();
-    expect(screen.getByText(/Nonspecific mechanical lower-back pattern/)).toBeTruthy();
+    await waitFor(() => expect(onNavigate).toHaveBeenCalledWith('/guide/screen/?region=lower-back&pattern=nonspecific-lower-back&question=0&match=yes'));
   });
 
-  it('opens a requested exercise in the existing player with a safety reminder', async () => {
-    window.history.replaceState({}, '', '/?exercise=open-book#pain-finder');
-    render(<PainFinder />);
+  it('opens a requested exercise in the player with a safety reminder', () => {
+    render(<PainFinder
+      initialStep="routine"
+      initialSearch="?exercise=open-book&entry=exercise"
+      onNavigate={vi.fn()}
+    />);
 
-    expect(await screen.findByRole('heading', { name: 'Open-book rotation' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Open-book rotation' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Run the safety check first/ })).toBeTruthy();
     expect(screen.getByText(/Direct exercise entry/)).toBeTruthy();
+  });
+
+  it('keeps the selected routine exercise in the URL', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/guide/move/?exercise=open-book&entry=exercise');
+    render(<PainFinder
+      initialStep="routine"
+      initialSearch={window.location.search}
+      onNavigate={vi.fn()}
+    />);
+
+    await user.click(screen.getByRole('button', { name: 'Choose Chair thoracic extension' }));
+
+    expect(window.location.pathname).toBe('/guide/move/');
+    expect(window.location.search).toBe('?region=upper-back&pattern=thoracic-muscle-strain&exercise=thoracic-extension&entry=exercise');
   });
 });

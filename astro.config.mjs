@@ -7,8 +7,14 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://stretchesfor.com',
-  integrations: [react(), sitemap({ filter: (page) => !page.includes('/stretches/') })],
+  integrations: [react(), sitemap({ filter: (page) => !page.includes('/stretches/') && !page.includes('/guide/') })],
   vite: {
+    // React's development JSX runtime exports jsxDEV, while its production
+    // runtime intentionally does not. Keep Astro build and dev dependency
+    // caches separate so a production build cannot poison a running dev app.
+    cacheDir: process.env.NODE_ENV === 'production'
+      ? 'node_modules/.vite/production'
+      : 'node_modules/.vite/development',
     plugins: [tailwindcss()],
     resolve: {
       dedupe: ['react', 'react-dom'],

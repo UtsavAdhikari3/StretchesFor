@@ -22,6 +22,7 @@
     "media:coverage:batch1": "node --experimental-strip-types scripts/report-media-coverage.ts --target 15",
     "media:coverage:batch2": "node --experimental-strip-types scripts/report-media-coverage.ts --target 22",
     "media:coverage:batch3": "node --experimental-strip-types scripts/report-media-coverage.ts --target 28",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name stretchesfor --branch main",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -48,6 +49,7 @@
     "@testing-library/user-event": "^14.6.6",
     "jsdom": "^30.0.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.127.1"
   }
 }
