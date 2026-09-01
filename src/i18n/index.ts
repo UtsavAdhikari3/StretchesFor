@@ -7,13 +7,12 @@ export type { Locale } from './config';
 
 export function t(locale: Locale, source: string): string {
   if (locale === 'en' || !source || source === 'stretchesfor') return source;
-  const exact = manualCatalog[locale][source] ?? catalog[locale][source];
-  if (exact) return exact;
-  let translated = source;
-  const entries = [...Object.entries(catalog[locale]), ...Object.entries(manualCatalog[locale])]
-    .filter(([key]) => key !== 'stretchesfor' && key.length >= 4 && /^[A-Za-z0-9]/.test(key) && source.includes(key))
-    .sort(([left], [right]) => right.length - left.length);
-  for (const [key, value] of entries) translated = translated.replaceAll(key, value);
+  return manualCatalog[locale][source] ?? catalog[locale][source] ?? source;
+}
+
+export function formatTranslation(locale: Locale, source: string, values: Record<string, string | number>): string {
+  let translated = t(locale, source);
+  for (const [key, value] of Object.entries(values)) translated = translated.replaceAll(`{${key}}`, String(value));
   return translated;
 }
 
@@ -37,5 +36,5 @@ export function translateRecord<T extends object>(locale: Locale, value: T, skip
 
 export const contentIdentityFields = new Set([
   'id', 'regionId', 'routineId', 'exerciseIds', 'patternId', 'slug', 'url', 'action',
-  'sourceRef', 'localAsset', 'sides', 'points', 'seconds', 'bilateral', 'critical',
+  'sourceRef', 'localAsset', 'sides', 'points', 'seconds', 'bilateral', 'critical', 'kind',
 ]);

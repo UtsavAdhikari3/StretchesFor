@@ -29,6 +29,20 @@ describe('guide flow URLs', () => {
     });
   });
 
+  it('preserves the active locale throughout the guide', () => {
+    expect(createGuideHref('result', {
+      region: 'lower-back',
+      pattern: 'nonspecific-lower-back',
+      answers: { emergency: 'no', match: 'yes' },
+    }, 'fr')).toBe('/fr/guide/result/?region=lower-back&pattern=nonspecific-lower-back&emergency=no&match=yes');
+
+    expect(createGuideHref('routine', {
+      region: 'lower-back',
+      pattern: 'nonspecific-lower-back',
+      exercise: 'pelvic-tilt',
+    }, 'pt')).toBe('/pt/guide/move/?region=lower-back&pattern=nonspecific-lower-back&exercise=pelvic-tilt');
+  });
+
   it('ignores invalid progress values instead of creating broken state', () => {
     expect(parseGuideState('?question=-2&emergency=maybe&trauma=yes')).toMatchObject({
       question: undefined,

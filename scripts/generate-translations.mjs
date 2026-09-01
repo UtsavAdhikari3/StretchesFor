@@ -47,7 +47,10 @@ function collectSources() {
     if (value.length < 2 || value.length > 450 || !/[A-Za-z]/.test(value) || value.includes('${') || looksLikeCode(value)) return;
     values.add(value);
   };
-  const files = walk(sourceRoot).filter((path) => /\.(?:astro|tsx?|jsx?)$/.test(path) && path !== catalogPath && !/\.test\.[^.]+$/.test(path));
+  const i18nRoot = join(sourceRoot, 'i18n');
+  const files = walk(sourceRoot).filter((path) => /\.(?:astro|tsx?|jsx?)$/.test(path)
+    && !path.startsWith(i18nRoot)
+    && !/\.test\.[^.]+$/.test(path));
   for (const file of files) {
     const source = readFileSync(file, 'utf8');
     if (!file.endsWith('.astro')) {
@@ -140,10 +143,28 @@ function combine() {
       batches[index].forEach((source, itemIndex) => { catalog[locale][source] = translated[itemIndex]; });
     }
   }
-  const output = `import type { Locale } from './config';\n\n// Generated static catalog. Re-run scripts/generate-translations.mjs when source copy changes.\nexport const catalog: Record<Exclude<Locale, 'en'>, Record<string, string>> = ${JSON.stringify(catalog, null, 2)};\n`;
+  const sources = new Set(collectSources());
+  const prunedCatalog = Object.fromEntries(targets.map((locale) => [
+    locale,
+    Object.fromEntries(Object.entries(catalog[locale] ?? {}).filter(([source]) => sources.has(source))),
+  ]));
+  const output = `import type { Locale } from './config';\n\n// Generated static catalog. Re-run scripts/generate-translations.mjs when source copy changes.\nexport const catalog: Record<Exclude<Locale, 'en'>, Record<string, string>> = ${JSON.stringify(prunedCatalog, null, 2)};\n`;
   writeFileSync(catalogPath, output);
   console.log(`Wrote ${catalogPath}`);
 }
 
-if (process.argv.includes('--combine')) combine();
+function prune() {
+  const sources = new Set(collectSources());
+  const existing = readExistingCatalog();
+  const catalog = Object.fromEntries(targets.map((locale) => [
+    locale,
+    Object.fromEntries(Object.entries(existing[locale] ?? {}).filter(([source]) => sources.has(source))),
+  ]));
+  const output = `import type { Locale } from './config';\n\n// Generated static catalog. Re-run scripts/generate-translations.mjs when source copy changes.\nexport const catalog: Record<Exclude<Locale, 'en'>, Record<string, string>> = ${JSON.stringify(catalog, null, 2)};\n`;
+  writeFileSync(catalogPath, output);
+  console.log(`Pruned ${catalogPath} to ${sources.size} canonical source strings.`);
+}
+
+if (process.argv.includes('--prune')) prune();
+else if (process.argv.includes('--combine')) combine();
 else prepare();

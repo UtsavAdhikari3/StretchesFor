@@ -17,6 +17,5 @@ export function localizeExercise(locale: Locale, exercise: Exercise): Exercise {
 }
 
 export function localizeHotspot(locale: Locale, hotspot: BodyRegionHotspot): BodyRegionHotspot {
-  return { ...hotspot, label: t(locale, hotspot.label), group: t(locale, hotspot.group) as BodyRegionHotspot['group'] };
+  return { ...hotspot, label: t(locale, hotspot.label) };
 }
-

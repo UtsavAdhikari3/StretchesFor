@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { exercises } from '../data/exercises';
 import { localizeExercise } from './content';
-import { localeInfo, localePath, locales, switchLocalePath, t } from './index';
+import { formatTranslation, localeInfo, localePath, locales, switchLocalePath, t } from './index';
 import { translateHtml } from './translateHtml';
+import { catalog } from './catalog';
 
 describe('internationalization', () => {
   it('defines every requested prefixed locale and speech language', () => {
@@ -20,6 +21,25 @@ describe('internationalization', () => {
       expect(t(locale, 'Start stretching')).not.toBe('Start stretching');
       expect(t(locale, 'Medical disclaimer')).not.toBe('Medical disclaimer');
       expect(t(locale, 'Stop if pain worsens.')).not.toBe('Stop if pain worsens.');
+    }
+  });
+
+  it('uses exact-key lookup and a stable English fallback', () => {
+    expect(t('fr', 'Start stretching')).not.toBe('Start stretching');
+    expect(t('fr', 'Prefix Start stretching suffix')).toBe('Prefix Start stretching suffix');
+    expect(t('de', '__missing_translation_key__')).toBe('__missing_translation_key__');
+    expect(formatTranslation('fr', 'Unknown {value}', { value: 'copy' })).toBe('Unknown copy');
+  });
+
+  it('keeps generated locale catalogs aligned and free of encoding corruption', () => {
+    const [firstLocale, ...otherLocales] = Object.keys(catalog) as Array<keyof typeof catalog>;
+    const expectedKeys = Object.keys(catalog[firstLocale]).sort();
+    for (const locale of otherLocales) expect(Object.keys(catalog[locale]).sort(), locale).toEqual(expectedKeys);
+
+    for (const [locale, entries] of Object.entries(catalog)) {
+      for (const [source, translation] of Object.entries(entries)) {
+        expect(`${source}\n${translation}`, `${locale}/${source}`).not.toMatch(/(?:Ã.|Â.|â€|�)/);
+      }
     }
   });
 

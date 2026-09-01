@@ -3,6 +3,9 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import PainFinder from './PainFinder';
+import { routines } from '../../data/exercises';
+import { formatTranslation, t, type Locale } from '../../i18n';
+import { localizeRoutine } from '../../i18n/content';
 
 vi.mock('./BodyModel', () => ({ default: () => <div data-testid="body-model" /> }));
 
@@ -88,6 +91,26 @@ describe('PainFinder URL-driven pages', () => {
     expect(screen.getByRole('button', { name: /Start Lower-back ease/ })).toBeTruthy();
   });
 
+  it.each(['es', 'fr', 'de', 'pt'] as Locale[])('shows and opens the same recommended routine in %s', async (locale) => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+    const routine = routines.find((item) => item.id === 'lower-back-ease');
+    if (!routine) throw new Error('Missing lower-back test routine');
+    const localizedRoutine = localizeRoutine(locale, routine);
+
+    render(<PainFinder
+      initialStep="result"
+      initialSearch="?region=lower-back&pattern=nonspecific-lower-back&question=4&emergency=no&trauma=no&systemic=no&function=no&match=yes"
+      locale={locale}
+      onNavigate={onNavigate}
+    />);
+
+    const startButton = screen.getByRole('button', { name: formatTranslation(locale, 'Start {routine}', { routine: localizedRoutine.name }) });
+    await user.click(startButton);
+
+    expect(onNavigate).toHaveBeenCalledWith(`/${locale}/guide/move/?region=lower-back&pattern=nonspecific-lower-back&emergency=no&trauma=no&systemic=no&function=no&match=yes&exercise=pelvic-tilt`);
+  });
+
   it('restores an urgent early-exit result from its URL', () => {
     render(<PainFinder
       initialStep="result"
@@ -134,6 +157,22 @@ describe('PainFinder URL-driven pages', () => {
     await user.click(screen.getByRole('button', { name: 'Choose Chair thoracic extension' }));
 
     expect(window.location.pathname).toBe('/guide/move/');
+    expect(window.location.search).toBe('?region=upper-back&pattern=thoracic-muscle-strain&exercise=thoracic-extension&entry=exercise');
+  });
+
+  it('keeps a localized routine and exercise change under the active locale', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState({}, '', '/fr/guide/move/?exercise=open-book&entry=exercise');
+    render(<PainFinder
+      initialStep="routine"
+      initialSearch={window.location.search}
+      locale="fr"
+      onNavigate={vi.fn()}
+    />);
+
+    await user.click(screen.getByRole('button', { name: formatTranslation('fr', 'Choose {exercise}', { exercise: t('fr', 'Chair thoracic extension') }) }));
+
+    expect(window.location.pathname).toBe('/fr/guide/move/');
     expect(window.location.search).toBe('?region=upper-back&pattern=thoracic-muscle-strain&exercise=thoracic-extension&entry=exercise');
   });
 });

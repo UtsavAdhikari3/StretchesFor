@@ -9,9 +9,8 @@ import { exercises, routines } from '../../data/exercises';
 import type { Answer, PainPattern } from '../../data/types';
 import { evaluateAnswers, type AnswerMap } from '../../lib/triage';
 import { createGuideHref, parseGuideState, type GuideFlowState, type GuideStep } from '../../lib/guideFlow';
-import { localeInfo, t, type Locale } from '../../i18n';
-import { localizeExercise, localizeHotspot, localizePattern, localizeQuestion, localizeRegion, localizeResult, localizeRoutine } from '../../i18n/content';
-import { useLocalizedDom } from './useLocalizedDom';
+import { formatTranslation, localeInfo, t, type Locale } from '../../i18n';
+import { localizePattern, localizeQuestion, localizeResult, localizeRoutine } from '../../i18n/content';
 
 const answerOptions: Array<{ value: Answer; label: string; hint: string; symbol: string }> = [
   { value: 'yes', label: 'Yes', hint: 'This is present', symbol: '✓' },
@@ -38,42 +37,36 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate, loc
   locale ??= 'en';
   const guideSectionRef = useRef<HTMLDivElement>(null);
   const patternSelectionRef = useRef<HTMLDivElement>(null);
-  useLocalizedDom(guideSectionRef, locale);
-  const localizedExercises = useMemo(() => exercises.map((exercise) => localizeExercise(locale, exercise)), [locale]);
-  const localizedRoutines = useMemo(() => routines.map((routine) => localizeRoutine(locale, routine)), [locale]);
-  const localizedPatterns = useMemo(() => patterns.map((item) => localizePattern(locale, item)), [locale]);
-  const localizedBodyRegions = useMemo(() => bodyRegions.map((item) => localizeHotspot(locale, item)), [locale]);
-  const localizedRegionGroups = useMemo(() => bodyRegionGroups.map((group) => t(locale, group)), [locale]);
   const urlState = useMemo(
     () => parseGuideState(initialSearch ?? (typeof window === 'undefined' ? '' : window.location.search)),
     [initialSearch],
   );
   const directExercise = useMemo(
-    () => urlState.exercise ? localizedExercises.find((item) => item.id === urlState.exercise) : undefined,
-    [localizedExercises, urlState.exercise],
+    () => urlState.exercise ? exercises.find((item) => item.id === urlState.exercise) : undefined,
+    [urlState.exercise],
   );
   const directRoutine = useMemo(
     () => directExercise
-      ? localizedRoutines.find((item) => item.regionId === directExercise.regionId && item.exerciseIds.includes(directExercise.id))
-        ?? localizedRoutines.find((item) => item.exerciseIds.includes(directExercise.id))
+      ? routines.find((item) => item.regionId === directExercise.regionId && item.exerciseIds.includes(directExercise.id))
+        ?? routines.find((item) => item.exerciseIds.includes(directExercise.id))
       : undefined,
-    [directExercise, localizedRoutines],
+    [directExercise],
   );
   const directPattern = useMemo(
-    () => directRoutine ? localizedPatterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined,
-    [directRoutine, localizedPatterns],
+    () => directRoutine ? patterns.find((item) => item.routineId === directRoutine.id && item.action === 'exercise') : undefined,
+    [directRoutine],
   );
   const directHotspot = useMemo(
-    () => directExercise ? localizedBodyRegions.find((item) => item.contentRegionId === directExercise.regionId) : undefined,
-    [directExercise, localizedBodyRegions],
+    () => directExercise ? bodyRegions.find((item) => item.contentRegionId === directExercise.regionId) : undefined,
+    [directExercise],
   );
   const selectedHotspot = useMemo(
-    () => directHotspot ?? (urlState.region ? localizedBodyRegions.find((item) => item.id === urlState.region) ?? localizedBodyRegions.find((item) => item.contentRegionId === urlState.region) : undefined),
-    [directHotspot, localizedBodyRegions, urlState.region],
+    () => directHotspot ?? (urlState.region ? bodyRegions.find((item) => item.id === urlState.region) ?? bodyRegions.find((item) => item.contentRegionId === urlState.region) : undefined),
+    [directHotspot, urlState.region],
   );
   const pattern = useMemo(
-    () => directPattern ?? (urlState.pattern ? localizedPatterns.find((item) => item.id === urlState.pattern && (!selectedHotspot || item.regionId === selectedHotspot.contentRegionId)) : undefined),
-    [directPattern, localizedPatterns, selectedHotspot, urlState.pattern],
+    () => directPattern ?? (urlState.pattern ? patterns.find((item) => item.id === urlState.pattern && (!selectedHotspot || item.regionId === selectedHotspot.contentRegionId)) : undefined),
+    [directPattern, selectedHotspot, urlState.pattern],
   );
   const step = initialStep;
   const answers: AnswerMap = urlState.answers ?? {};
@@ -81,16 +74,19 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate, loc
   const needsSafetyCheck = urlState.entry === 'exercise';
   const speech = useSpeechGuidance(false, localeInfo[locale].speechLang);
   const region = useMemo(() => {
-    const found = getRegion(selectedHotspot?.contentRegionId ?? '');
-    return found ? localizeRegion(locale, found) : undefined;
-  }, [locale, selectedHotspot]);
-  const regionPatterns = useMemo(() => localizedPatterns.filter((item) => item.regionId === region?.id), [localizedPatterns, region]);
-  const questions = useMemo(() => pattern ? questionsFor(pattern).map((question) => localizeQuestion(locale, question)) : [], [locale, pattern]);
+    return getRegion(selectedHotspot?.contentRegionId ?? '');
+  }, [selectedHotspot]);
+  const regionPatterns = useMemo(() => patterns.filter((item) => item.regionId === region?.id), [region]);
+  const questions = useMemo(() => pattern ? questionsFor(pattern) : [], [pattern]);
+  const localizedQuestions = useMemo(() => questions.map((question) => localizeQuestion(locale, question)), [locale, questions]);
+  const localizedPattern = useMemo(() => pattern ? localizePattern(locale, pattern) : undefined, [locale, pattern]);
   const firstUnansweredQuestionIndex = questions.findIndex((question) => answers[question.id as keyof AnswerMap] === undefined);
   const lastAccessibleQuestionIndex = firstUnansweredQuestionIndex >= 0 ? firstUnansweredQuestionIndex : Math.max(questions.length - 1, 0);
   const questionIndex = Math.min(urlState.question ?? 0, lastAccessibleQuestionIndex);
-  const result = useMemo(() => pattern ? localizeResult(locale, evaluateAnswers(pattern, answers)) : undefined, [locale, pattern, answers]);
-  const routine = useMemo(() => directRoutine ?? (pattern?.routineId ? localizedRoutines.find((item) => item.id === pattern.routineId) : undefined), [directRoutine, localizedRoutines, pattern]);
+  const result = useMemo(() => pattern ? evaluateAnswers(pattern, answers) : undefined, [pattern, answers]);
+  const localizedResult = useMemo(() => result ? localizeResult(locale, result) : undefined, [locale, result]);
+  const routine = useMemo(() => directRoutine ?? (pattern?.routineId ? routines.find((item) => item.id === pattern.routineId) : undefined), [directRoutine, pattern]);
+  const localizedRoutine = useMemo(() => routine ? localizeRoutine(locale, routine) : undefined, [locale, routine]);
   const canShowResult = pattern?.action === 'urgent-care' || answers.emergency === 'yes' || firstUnansweredQuestionIndex < 0;
   const canShowRoutine = needsSafetyCheck || firstUnansweredQuestionIndex < 0;
 
@@ -225,13 +221,13 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate, loc
   useEffect(() => {
     if (!speech.enabled) return;
     if (step === 'finder' && !selectedHotspot) speech.speak(t(locale, 'Where does it hurt? Rotate the body, or choose a region from the text list.'));
-    if (step === 'finder' && selectedHotspot) speech.speak(`${selectedHotspot.label}. ${t(locale, 'Next, choose the description that feels closest.')}`);
-    if (step === 'questions' && questions[questionIndex]) {
-      const question = questions[questionIndex];
+    if (step === 'finder' && selectedHotspot) speech.speak(`${t(locale, selectedHotspot.label)}. ${t(locale, 'Next, choose the description that feels closest.')}`);
+    if (step === 'questions' && localizedQuestions[questionIndex]) {
+      const question = localizedQuestions[questionIndex];
       speech.speak(`${question.prompt} ${question.help ?? ''} ${t(locale, 'Yes')}, ${t(locale, 'No')}, ${t(locale, 'Not sure')}.`);
     }
-    if (step === 'result' && result) speech.speak(`${result.title}. ${result.description} ${result.nextStep}`);
-  }, [locale, speech.enabled, speech.speak, step, selectedHotspot?.id, questions, questionIndex, result]);
+    if (step === 'result' && localizedResult) speech.speak(`${localizedResult.title}. ${localizedResult.description} ${localizedResult.nextStep}`);
+  }, [locale, speech.enabled, speech.speak, step, selectedHotspot?.id, localizedQuestions, questionIndex, localizedResult]);
 
   const activeStepIndex = flowSteps.findIndex((item) => item.id === step);
   const progress = step === 'finder' ? (selectedHotspot ? 28 : 10) : step === 'questions' ? 35 + ((questionIndex + 1) / Math.max(questions.length, 1)) * 35 : step === 'result' ? 85 : 100;
@@ -240,26 +236,26 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate, loc
   return (
     <div ref={guideSectionRef} className="surface-card overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,.5)]">
       <div className="flex flex-wrap items-center justify-end gap-4 border-b border-line bg-surface-raised/40 px-5 py-4 sm:px-7">
-        <div className="flex flex-wrap gap-2"><VoiceToggle enabled={speech.enabled} supported={speech.supported} onToggle={speech.toggle} label="Voice guide" />{(selectedHotspot || step !== 'finder') && <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">Start over</button>}</div>
+        <div className="flex flex-wrap gap-2"><VoiceToggle enabled={speech.enabled} supported={speech.supported} onToggle={speech.toggle} label="Voice guide" locale={locale} />{(selectedHotspot || step !== 'finder') && <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">{t(locale, 'Start over')}</button>}</div>
       </div>
       <div className="h-1 bg-line" aria-hidden="true"><div className="h-full bg-brand transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
-      <div className="border-b border-line px-5 py-4 sm:px-7"><ol className="grid grid-cols-4 gap-2" aria-label="Pain finder progress">{flowSteps.map((item, index) => <li key={item.id} aria-current={index === activeStepIndex ? 'step' : undefined} className="min-w-0"><div className="flex items-center gap-2"><span className={index < activeStepIndex ? 'grid size-6 shrink-0 place-items-center rounded-full bg-success text-[10px] font-bold text-white' : index === activeStepIndex ? 'grid size-6 shrink-0 place-items-center rounded-full bg-brand text-[10px] font-bold text-white' : 'grid size-6 shrink-0 place-items-center rounded-full border border-line bg-canvas text-[10px] font-bold text-subtle'}>{index < activeStepIndex ? '✓' : index + 1}</span><span className={index === activeStepIndex ? 'truncate text-xs font-semibold' : 'truncate text-xs font-medium text-subtle'}>{item.label}</span></div></li>)}</ol></div>
+      <div className="border-b border-line px-5 py-4 sm:px-7"><ol className="grid grid-cols-4 gap-2" aria-label={t(locale, 'Pain finder progress')}>{flowSteps.map((item, index) => <li key={item.id} aria-current={index === activeStepIndex ? 'step' : undefined} className="min-w-0"><div className="flex items-center gap-2"><span className={index < activeStepIndex ? 'grid size-6 shrink-0 place-items-center rounded-full bg-success text-[10px] font-bold text-white' : index === activeStepIndex ? 'grid size-6 shrink-0 place-items-center rounded-full bg-brand text-[10px] font-bold text-white' : 'grid size-6 shrink-0 place-items-center rounded-full border border-line bg-canvas text-[10px] font-bold text-subtle'}>{index < activeStepIndex ? '✓' : index + 1}</span><span className={index === activeStepIndex ? 'truncate text-xs font-semibold' : 'truncate text-xs font-medium text-subtle'}>{t(locale, item.label)}</span></div></li>)}</ol></div>
 
       <div className="p-5 sm:p-7 lg:p-9">
         {step === 'finder' && <section aria-labelledby="region-heading">
           {isChoosingRegion && <>
-          <div className="mx-auto max-w-2xl text-center"><p className="text-sm font-semibold text-brand">Interactive pain finder</p><h2 id="region-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Tap where it hurts.</h2><p className="mt-3 text-pretty leading-7 text-muted">Tap directly on the body, choose a visible marker, or use the text list. Drag the model when you need to see another side.</p></div>
+          <div className="mx-auto max-w-2xl text-center"><p className="text-sm font-semibold text-brand">{t(locale, 'Interactive pain finder')}</p><h2 id="region-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">{t(locale, 'Tap where it hurts.')}</h2><p className="mt-3 text-pretty leading-7 text-muted">{t(locale, 'Tap directly on the body, choose a visible marker, or use the text list. Drag the model when you need to see another side.')}</p></div>
           <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,.8fr)]">
-            <BodyModel onSelect={chooseRegion} />
+            <BodyModel onSelect={chooseRegion} locale={locale} />
             <div className="min-w-0 rounded-2xl border border-line bg-canvas p-4 sm:p-5">
-              <div><h3 className="font-semibold">Choose from the list</h3><p className="mt-1 text-xs leading-5 text-subtle">24 precise regions</p></div>
+              <div><h3 className="font-semibold">{t(locale, 'Choose from the list')}</h3><p className="mt-1 text-xs leading-5 text-subtle">{t(locale, '24 precise regions')}</p></div>
               <div className="mt-5 grid gap-6 xl:max-h-[38rem] xl:overflow-y-auto xl:pr-2">
-                {localizedRegionGroups.map((group) => (
+                {bodyRegionGroups.map((group) => (
                   <fieldset key={group}>
-                    <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-subtle">{group}</legend>
+                    <legend className="mb-2 text-xs font-semibold uppercase tracking-[0.1em] text-subtle">{t(locale, group)}</legend>
                     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
-                      {localizedBodyRegions.filter((item) => item.group === group).map((item) => (
-                        <button key={item.id} type="button" aria-label={`Select ${item.label}`} onClick={() => chooseRegion(item.id)} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-left text-sm font-medium text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">{item.label}</button>
+                      {bodyRegions.filter((item) => item.group === group).map((item) => (
+                        <button key={item.id} type="button" aria-label={`${t(locale, 'Select')} ${t(locale, item.label)}`} onClick={() => chooseRegion(item.id)} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-left text-sm font-medium text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink">{t(locale, item.label)}</button>
                       ))}
                     </div>
                   </fieldset>
@@ -272,43 +268,72 @@ export default function PainFinder({ initialStep, initialSearch, onNavigate, loc
           {selectedHotspot && region && (
             <div ref={patternSelectionRef} className="scroll-mt-24 rounded-2xl border border-brand/30 bg-brand/8 p-4 sm:flex sm:items-center sm:justify-between sm:gap-5 sm:p-5" aria-live="polite">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Pain area selected</p>
-                <h2 id="region-heading" className="mt-1 text-2xl font-semibold tracking-[-0.035em]">{selectedHotspot.label}</h2>
-                <p className="mt-1 text-sm leading-6 text-muted">Next, choose the description that feels closest.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{t(locale, 'Pain area selected')}</p>
+                <h2 id="region-heading" className="mt-1 text-2xl font-semibold tracking-[-0.035em]">{t(locale, selectedHotspot.label)}</h2>
+                <p className="mt-1 text-sm leading-6 text-muted">{t(locale, 'Next, choose the description that feels closest.')}</p>
               </div>
-              <button type="button" onClick={changeRegion} className="mt-4 min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink sm:mt-0 sm:shrink-0">Change pain area</button>
+              <button type="button" onClick={changeRegion} className="mt-4 min-h-11 rounded-lg border border-line bg-surface px-4 text-sm font-semibold text-muted transition-[border-color,color,background-color] hover:border-line-strong hover:bg-surface-raised hover:text-ink sm:mt-0 sm:shrink-0">{t(locale, 'Change pain area')}</button>
             </div>
           )}
 
-          {selectedHotspot && region && <div className="mt-9 border-t border-line pt-8" aria-live="polite"><p className="text-sm font-semibold text-brand">Possible causes · {selectedHotspot.label}</p><h3 className="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">Which symptom pattern sounds closest?</h3><p className="mt-3 max-w-2xl text-pretty leading-7 text-muted">These descriptions overlap and cannot identify the cause. Choose one only to run its deterministic safety path.</p><div className="mt-6 grid gap-4 lg:grid-cols-2">{regionPatterns.map((item) => <article key={item.id} className="surface-card group flex flex-col p-5 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised/35 motion-reduce:hover:translate-y-0"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">Possible pattern</p>{item.action !== 'exercise' && <span className={item.action === 'urgent-care' ? 'rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-danger' : 'rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-warning'}>{item.action === 'urgent-care' ? 'Urgent care' : 'Assessment first'}</span>}</div><h4 className="mt-2 text-balance text-xl font-semibold tracking-[-0.03em]">{item.name}</h4><p className="mt-3 text-sm leading-6 text-muted">{item.summary}</p><div className="mt-5 grid gap-4 border-t border-line pt-4 text-sm sm:grid-cols-2"><div><p className="font-medium">Often feels like</p><ul className="mt-2 grid gap-1.5 text-muted">{item.symptoms.map((symptom) => <li key={symptom}>· {symptom}</li>)}</ul></div><div><p className="font-medium">Often linked to</p><ul className="mt-2 grid gap-1.5 text-muted">{item.triggers.map((trigger) => <li key={trigger}>· {trigger}</li>)}</ul></div></div><button type="button" onClick={() => choosePattern(item)} className="mt-6 min-h-12 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">This sounds like me</button></article>)}</div></div>}
+          {selectedHotspot && region && <div className="mt-9 border-t border-line pt-8" aria-live="polite">
+            <p className="text-sm font-semibold text-brand">{t(locale, 'Possible causes')} · {t(locale, selectedHotspot.label)}</p>
+            <h3 className="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">{t(locale, 'Which symptom pattern sounds closest?')}</h3>
+            <p className="mt-3 max-w-2xl text-pretty leading-7 text-muted">{t(locale, 'These descriptions overlap and cannot identify the cause. Choose one only to run its deterministic safety path.')}</p>
+            <div className="mt-6 grid gap-4 lg:grid-cols-2">{regionPatterns.map((item) => {
+              const displayed = localizePattern(locale, item);
+              return <article key={item.id} className="surface-card group flex flex-col p-5 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised/35 motion-reduce:hover:translate-y-0">
+                <div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{t(locale, 'Possible pattern')}</p>{item.action !== 'exercise' && <span className={item.action === 'urgent-care' ? 'rounded-md border border-danger/30 bg-danger/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-danger' : 'rounded-md border border-warning/30 bg-warning/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-warning'}>{t(locale, item.action === 'urgent-care' ? 'Urgent care' : 'Assessment first')}</span>}</div>
+                <h4 className="mt-2 text-balance text-xl font-semibold tracking-[-0.03em]">{displayed.name}</h4>
+                <p className="mt-3 text-sm leading-6 text-muted">{displayed.summary}</p>
+                <div className="mt-5 grid gap-4 border-t border-line pt-4 text-sm sm:grid-cols-2"><div><p className="font-medium">{t(locale, 'Often feels like')}</p><ul className="mt-2 grid gap-1.5 text-muted">{displayed.symptoms.map((symptom) => <li key={symptom}>· {symptom}</li>)}</ul></div><div><p className="font-medium">{t(locale, 'Often linked to')}</p><ul className="mt-2 grid gap-1.5 text-muted">{displayed.triggers.map((trigger) => <li key={trigger}>· {trigger}</li>)}</ul></div></div>
+                <button type="button" onClick={() => choosePattern(item)} className="mt-6 min-h-12 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">{t(locale, 'This sounds like me')}</button>
+              </article>;
+            })}</div>
+          </div>}
         </section>}
 
         {step === 'questions' && pattern && (
           <section aria-labelledby="question-heading" aria-live="polite" aria-atomic="true" className="mx-auto min-h-[34rem] max-w-3xl py-4 sm:py-8">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-brand">Condition-specific safety screen</p>
-              <p className="text-sm tabular-nums text-subtle">Question {questionIndex + 1} of {questions.length}</p>
+              <p className="text-sm font-semibold text-brand">{t(locale, 'Condition-specific safety screen')}</p>
+              <p className="text-sm tabular-nums text-subtle">{formatTranslation(locale, 'Question {current} of {total}', { current: questionIndex + 1, total: questions.length })}</p>
             </div>
             <div className="mt-3 grid grid-cols-5 gap-1" aria-hidden="true">
               {questions.map((question, index) => <span key={question.id} className={index <= questionIndex ? 'h-1 rounded-full bg-brand' : 'h-1 rounded-full bg-line'} />)}
             </div>
             <div className="mt-6 flex min-h-[27rem] flex-col rounded-2xl border border-line bg-canvas p-6 sm:p-9">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />For the “{pattern.name}” pattern</div>
+              <div className="flex items-center gap-2 text-sm font-medium text-muted"><span className="size-1.5 rounded-full bg-brand" aria-hidden="true" />{formatTranslation(locale, 'For the “{pattern}” pattern', { pattern: localizedPattern?.name ?? pattern.name })}</div>
               <div className="mt-4 min-h-40 sm:min-h-44">
-                <h2 id="question-heading" className="text-balance text-xl font-semibold leading-tight tracking-[-0.035em] sm:text-2xl">{questions[questionIndex].prompt}</h2>
-                {questions[questionIndex].help && <p className="mt-4 text-pretty text-sm leading-6 text-muted sm:text-base sm:leading-7">{questions[questionIndex].help}</p>}
+                <h2 id="question-heading" className="text-balance text-xl font-semibold leading-tight tracking-[-0.035em] sm:text-2xl">{localizedQuestions[questionIndex].prompt}</h2>
+                {localizedQuestions[questionIndex].help && <p className="mt-4 text-pretty text-sm leading-6 text-muted sm:text-base sm:leading-7">{localizedQuestions[questionIndex].help}</p>}
               </div>
               <div className="mt-auto grid gap-3 pt-6 sm:grid-cols-3">
-                {answerOptions.map((option) => <button key={option.value} type="button" aria-label={option.label} onClick={() => answerQuestion(option.value)} className="group min-h-20 rounded-xl border border-line bg-surface px-5 text-left transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-brand hover:bg-brand/5 motion-reduce:hover:translate-y-0"><span className="flex items-center justify-between gap-3"><span className="text-base font-semibold">{option.label}</span><span className="grid size-7 place-items-center rounded-full border border-line bg-canvas text-xs font-semibold text-subtle group-hover:border-brand group-hover:text-brand" aria-hidden="true">{option.symbol}</span></span><span className="mt-1 block text-xs text-subtle">{option.hint}</span></button>)}
+                {answerOptions.map((option) => <button key={option.value} type="button" aria-label={t(locale, option.label)} onClick={() => answerQuestion(option.value)} className="group min-h-20 rounded-xl border border-line bg-surface px-5 text-left transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-brand hover:bg-brand/5 motion-reduce:hover:translate-y-0"><span className="flex items-center justify-between gap-3"><span className="text-base font-semibold">{t(locale, option.label)}</span><span className="grid size-7 place-items-center rounded-full border border-line bg-canvas text-xs font-semibold text-subtle group-hover:border-brand group-hover:text-brand" aria-hidden="true">{option.symbol}</span></span><span className="mt-1 block text-xs text-subtle">{t(locale, option.hint)}</span></button>)}
               </div>
             </div>
-            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={goToPreviousQuestion} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-muted transition-colors hover:text-ink">← {questionIndex > 0 ? 'Previous question' : 'Back to possible causes'}</button></div>
+            <div className="mt-5 flex flex-wrap gap-2"><button type="button" onClick={goToPreviousQuestion} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-muted transition-colors hover:text-ink">← {t(locale, questionIndex > 0 ? 'Previous question' : 'Back to possible causes')}</button></div>
           </section>
         )}
 
-        {step === 'result' && result && pattern && canShowResult && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8"><p className="text-sm font-semibold text-brand">Safety result</p><div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}><div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div><h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{result.title}</h2><p className="mt-4 text-pretty leading-7 text-muted">{result.description}</p><p className="mt-4 font-medium leading-7">{result.nextStep}</p>{result.kind === 'movement' && routine && <button type="button" onClick={() => navigate('routine', { ...currentState, question: undefined, exercise: routine.exerciseIds[0], entry: undefined })} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">Start {routine.name}</button>}</div><p className="mt-5 text-sm leading-6 text-subtle">This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.</p></section>}
+        {step === 'result' && result && localizedResult && pattern && canShowResult && <section aria-labelledby="result-heading" aria-live="polite" className="mx-auto max-w-3xl py-4 sm:py-8">
+          <p className="text-sm font-semibold text-brand">{t(locale, 'Safety result')}</p>
+          <div className={result.kind === 'urgent' ? 'mt-5 rounded-2xl border border-danger/50 bg-danger/10 p-6 sm:p-9' : result.kind === 'professional' ? 'mt-5 rounded-2xl border border-warning/50 bg-warning/10 p-6 sm:p-9' : 'mt-5 rounded-2xl border border-success/50 bg-success/10 p-6 sm:p-9'}>
+            <div className={result.kind === 'urgent' ? 'grid size-11 place-items-center rounded-full bg-danger text-white' : result.kind === 'professional' ? 'grid size-11 place-items-center rounded-full bg-warning text-canvas' : 'grid size-11 place-items-center rounded-full bg-success text-canvas'} aria-hidden="true">{result.kind === 'movement' ? '✓' : '!'}</div>
+            <h2 id="result-heading" className="mt-5 text-balance text-3xl font-semibold tracking-[-0.045em]">{localizedResult.title}</h2>
+            <p className="mt-4 text-pretty leading-7 text-muted">{localizedResult.description}</p>
+            <p className="mt-4 font-medium leading-7">{localizedResult.nextStep}</p>
+            {result.kind === 'movement' && routine && localizedRoutine && <button type="button" onClick={() => navigate('routine', { ...currentState, question: undefined, exercise: routine.exerciseIds[0], entry: undefined })} className="mt-7 min-h-12 rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85 motion-reduce:hover:translate-y-0">{formatTranslation(locale, 'Start {routine}', { routine: localizedRoutine.name })}</button>}
+          </div>
+          <p className="mt-5 text-sm leading-6 text-subtle">{t(locale, 'This limited screen cannot rule out every cause. If you are worried or symptoms change, seek professional care.')}</p>
+        </section>}
 
-        {step === 'routine' && routine && canShowRoutine && <section aria-labelledby="routine-heading"><button type="button" onClick={() => navigate(needsSafetyCheck ? 'questions' : 'result', needsSafetyCheck ? { region: selectedHotspot?.id, pattern: pattern?.id, question: 0, answers: {} } : { ...currentState, exercise: undefined, entry: undefined })} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result'}</button>{needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">Direct exercise entry.</strong> This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.</div>}<div className="mb-6"><p className="text-sm font-semibold text-brand">Your mapped movement routine</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{routine.name}</h2><p className="mt-2 text-pretty text-muted">{routine.description}</p></div><ExercisePlayer routine={routine} exercises={localizedExercises} locale={locale} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} onExerciseChange={updateRoutineExercise} /></section>}
+        {step === 'routine' && routine && localizedRoutine && canShowRoutine && <section aria-labelledby="routine-heading">
+          <button type="button" onClick={() => navigate(needsSafetyCheck ? 'questions' : 'result', needsSafetyCheck ? { region: selectedHotspot?.id, pattern: pattern?.id, question: 0, answers: {} } : { ...currentState, exercise: undefined, entry: undefined })} className="mb-5 min-h-11 rounded-lg px-2 text-sm font-semibold text-muted transition-colors hover:text-ink">← {t(locale, needsSafetyCheck ? 'Run the safety check first' : 'Back to safety result')}</button>
+          {needsSafetyCheck && <div className="mb-6 rounded-xl border border-warning/40 bg-warning/5 p-4 text-sm leading-6 text-muted"><strong className="text-warning">{t(locale, 'Direct exercise entry.')}</strong> {t(locale, 'This opens the requested movement immediately, but it does not mean stretching is appropriate for your symptoms. Use the safety check above if you have not already screened for warning signs.')}</div>}
+          <div className="mb-6"><p className="text-sm font-semibold text-brand">{t(locale, 'Your mapped movement routine')}</p><h2 id="routine-heading" className="mt-2 text-balance text-3xl font-semibold tracking-[-0.045em]">{localizedRoutine.name}</h2><p className="mt-2 text-pretty text-muted">{localizedRoutine.description}</p></div>
+          <ExercisePlayer routine={routine} exercises={exercises} locale={locale} initialExerciseId={initialExerciseId} voiceEnabled={speech.enabled} voiceSupported={speech.supported} onVoiceToggle={speech.toggle} onExerciseChange={updateRoutineExercise} />
+        </section>}
       </div>
     </div>
   );
