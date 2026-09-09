@@ -1,0 +1,6 @@
+---
+import Page from '../../routines/index.astro';
+import { locales } from '../../../i18n';
+export const getStaticPaths = () => locales.map(locale => ({ params: { locale } }));
+---
+<Page />

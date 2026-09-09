@@ -27,14 +27,14 @@ const walk = (directory) => readdirSync(directory, { withFileTypes: true }).flat
 const utilityWords = new Set(['flex', 'grid', 'block', 'hidden', 'relative', 'absolute', 'fixed', 'sticky', 'container-shell', 'surface-card', 'prose-sf', 'group', 'font-semibold', 'text-muted', 'text-ink', 'text-brand']);
 const looksLikeCode = (value) => {
   if (/^[\d\s.,+%-]*(?:m|deg|px|rem|s)?(?:\s+[\d\s.,+%-]+(?:m|deg|px|rem|s)?)*$/i.test(value)) return true;
-  if (/[{}<>]|(?:^|\s)(?:const|return|function|import|export|className|undefined|null|true|false)(?:\s|$)/.test(value)) return true;
+  if (/[{}<>]|^(?:const|let|function|import|export|className)\s|^(?:undefined|null|true|false)$/.test(value)) return true;
   if (/^[?&]|(?:\?|&)\w+=/.test(value)) return true;
   if (/^(?:https?:|mailto:|\/|\.\/|\.\.\/|[.#@])/.test(value)) return true;
   if (/^[a-z0-9_-]+\.(?:astro|tsx?|jsx?|css|json|svg|png|webp|mp4)$/i.test(value)) return true;
   if (/^[a-z][a-z0-9]*(?:[-_:][a-z0-9./[\]-]+)+$/i.test(value) && !value.includes(' ')) return true;
   const tokens = value.split(/\s+/);
   if (tokens.length > 1) {
-    const utilityCount = tokens.filter((token) => utilityWords.has(token) || /^(?:[a-z-]+:)?-?(?:m|p|h|w|min|max|gap|space|rounded|border|bg|text|font|leading|tracking|items|justify|place|overflow|transition|duration|shadow|opacity|cursor|object|z|top|left|right|bottom|inset|translate|rotate|scale|col|row|sm|md|lg|xl|2xl)[-:[\]/0-9a-z.%(),]+$/i.test(token)).length;
+    const utilityCount = tokens.filter((token) => utilityWords.has(token) || /^(?:[a-z-]+:)*-?(?:[mp][trblxyse]?|h|w|min|max|gap|space|rounded|border|bg|text|font|leading|tracking|items|justify|place|overflow|transition|duration|shadow|opacity|cursor|object|z|top|left|right|bottom|inset|translate|rotate|scale|col|row|grid|flex)(?:-|:|\[).+$/i.test(token)).length;
     if (utilityCount / tokens.length > 0.55) return true;
   }
   return false;
@@ -44,7 +44,7 @@ function collectSources() {
   const values = new Set();
   const add = (raw) => {
     const value = raw.replace(/&amp;/g, '&').replace(/\\(['"`\\])/g, '$1').replace(/\\n/g, ' ').replace(/\s+/g, ' ').trim();
-    if (value.length < 2 || value.length > 450 || !/[A-Za-z]/.test(value) || value.includes('${') || looksLikeCode(value)) return;
+    if (value.length < 2 || value.length > 1500 || !/[A-Za-z]/.test(value) || value.includes('${') || looksLikeCode(value)) return;
     values.add(value);
   };
   const i18nRoot = join(sourceRoot, 'i18n');
@@ -124,6 +124,7 @@ function prepare() {
     }
   }
   writeFileSync(manifestPath, JSON.stringify({ sources, batches, targets }, null, 2));
+  if (config.at(-1) === 'next') config.pop();
   writeFileSync(configPath, `${config.join('\n')}\n`);
   console.log(`Prepared ${sources.length} new source strings (${allSources.length} total) in ${batches.length} batches per language.`);
   console.log(`Run: curl.exe -sS -L --retry 4 --retry-all-errors -K "${relative(root, configPath)}"`);

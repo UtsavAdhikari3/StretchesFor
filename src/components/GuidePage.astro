@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PainFinder from './app/PainFinder';
+import RoutineFinder from './app/RoutineFinder';
 import type { GuideStep } from '../lib/guideFlow';
 import { getLocaleFromPath } from '../i18n';
 
@@ -8,8 +8,8 @@ const { step } = Astro.props as { step: GuideStep };
 const locale = getLocaleFromPath(Astro.url.pathname);
 const metadata = {
   finder: {
-    title: 'Locate Your Pain Area | Guide to Stretch',
-    description: 'Start the Guide to Stretch by selecting the body area that hurts and comparing possible symptom patterns.',
+    title: 'Find Your Everyday Routine',
+    description: 'Choose an area, complete a safety check, and build a routine for your time and space.',
   },
   questions: {
     title: 'Safety Screen | Guide to Stretch',
@@ -20,8 +20,8 @@ const metadata = {
     description: 'Review the next step suggested by your Guide to Stretch safety answers.',
   },
   routine: {
-    title: 'Guided Movement Routine | Guide to Stretch',
-    description: 'Follow a gentle mapped movement routine with demonstrations, a timer, and optional voice guidance.',
+    title: 'Your Guided Movement Routine',
+    description: 'Follow clear exercise steps with a timer, easier options, and optional voice guidance.',
   },
 }[step];
 ---
@@ -31,7 +31,8 @@ const metadata = {
   <section class="border-y border-line bg-surface-raised/20 py-10 sm:py-16">
     <div class="container-shell">
       <h1 class="sr-only">{metadata.title}</h1>
-      <PainFinder initialStep={step} locale={locale} client:only="react" />
+      <RoutineFinder initialStep={step} locale={locale} client:only="react" />
+      <noscript><p>JavaScript is needed for the questionnaire. You can still <a href="/exercises/">read every exercise guide</a>.</p></noscript>
     </div>
   </section>
 </BaseLayout>

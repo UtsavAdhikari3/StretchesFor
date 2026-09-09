@@ -3,8 +3,8 @@ import { exerciseBlueprints } from './content';
 import { exerciseSourceManifest } from './exerciseSources';
 
 describe('exercise source manifest', () => {
-  it('records an explicit reviewed provider result for all 28 local movements', () => {
-    expect(Object.keys(exerciseSourceManifest)).toHaveLength(28);
+  it('records an explicit reviewed provider result for all 48 local movements', () => {
+    expect(Object.keys(exerciseSourceManifest)).toHaveLength(48);
     expect(Object.keys(exerciseSourceManifest).sort()).toEqual(exerciseBlueprints.map((item) => item.id).sort());
     for (const source of Object.values(exerciseSourceManifest)) {
       expect(source).toHaveProperty('wgerId');

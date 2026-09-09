@@ -64,8 +64,8 @@ export function translateHtml(html: string, locale: Locale): string {
   });
 
   output = output.replace(/\b(aria-label|content|placeholder|title|alt)="([^"]+)"/g, (match, attribute: string, source: string) => {
-    if (attribute === 'content' && /^(?:https?:|\d|#|index,|width=|summary_)/i.test(source)) return match;
-    return `${attribute}="${t(locale, source)}"`;
+    if (attribute === 'content' && /^(?:https?:|\d|#|(?:no)?index,|width=|summary_)/i.test(source)) return match;
+    return `${attribute}="${t(locale, source).replace(/"/g, '&quot;').replace(/</g, '&lt;')}"`;
   });
 
   output = output.replace(/\bhref="(\/(?!\/)[^"]*)"/g, (match, href: string) => {

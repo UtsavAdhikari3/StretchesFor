@@ -18,6 +18,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      - run: npm run verify:site
       - name: Prevent verified media coverage regression
         run: npm run media:coverage
       - uses: actions/upload-artifact@v4

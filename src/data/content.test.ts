@@ -35,7 +35,7 @@ describe('content graph integrity', () => {
     }
   });
   it('includes complete exercise guidance', () => {
-    expect(exercises).toHaveLength(28);
+    expect(exercises).toHaveLength(48);
     for (const exercise of exercises) {
       expect(exercise.instructions.length).toBeGreaterThanOrEqual(3);
       expect(exercise.mistakes.length).toBeGreaterThanOrEqual(2);

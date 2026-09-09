@@ -1,197 +1,29 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import RegionCard from '../components/RegionCard.astro';
-import HomeFaq from '../components/HomeFaq.astro';
-import PainFinder from '../components/app/PainFinder';
 import { regions } from '../data/content';
-import { getHomeFaqSchema } from '../data/homeFaqs';
-import { getLocaleFromPath } from '../i18n';
-
-const description = 'Explore stretches for lower back, neck, knee, hip, shoulder and joint pain with focused safety screening and guided demonstrations.';
+import { everydayRoutines } from '../data/everydayRoutines';
+import { getLocaleFromPath, localePath, t } from '../i18n';
 const locale = getLocaleFromPath(Astro.url.pathname);
-const structuredData = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': 'https://stretchesfor.com/#website',
-      url: 'https://stretchesfor.com/',
-      name: 'stretchesfor',
-      alternateName: 'Stretches For',
-      description,
-      inLanguage: 'en',
-    },
-    {
-      '@type': 'WebApplication',
-      '@id': 'https://stretchesfor.com/#tool',
-      name: 'stretchesfor guided movement tool',
-      url: 'https://stretchesfor.com/',
-      description,
-      applicationCategory: 'HealthApplication',
-      operatingSystem: 'Any',
-      browserRequirements: 'Requires a modern web browser with JavaScript enabled.',
-      isAccessibleForFree: true,
-      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-    },
-    getHomeFaqSchema(),
-  ],
-};
+const tr = (s: string) => t(locale, s);
+const path = (s: string) => localePath(locale, s);
+const title = 'Everyday stretches and simple mobility routines';
+const description = 'Find a comfortable stretching routine for your body, time, and space. Explore 48 exercise guides and six everyday routines, with a safety check before you begin.';
+const url = new URL(path('/'), Astro.site).toString();
+const schema = { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Stretches For', url, description: tr(description), inLanguage: locale };
 ---
-
-<BaseLayout title="Stretches for Pain & Mobility Guides" description={description}>
-  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
-  <section class="relative overflow-hidden border-b border-line">
-    <div class="container-shell grid min-h-[42rem] items-center gap-14 py-20 lg:grid-cols-[0.92fr_1.08fr] lg:py-28">
-      <div>
-        <h1 class="max-w-4xl text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.06em] sm:text-6xl lg:text-7xl">Stretches for pain, with a safer way to start.</h1>
-        <p class="mt-6 max-w-2xl text-pretty text-lg leading-8 text-muted">Explore gentle stretches for common pain areas. Locate discomfort on an interactive body, complete a focused safety screen, and follow exercise demonstrations with optional voice coaching.</p>
-        <div class="mt-8 flex flex-wrap gap-3">
-          <a href="#pain-finder" class="inline-flex min-h-12 items-center rounded-lg bg-ink px-5 text-sm font-semibold text-canvas transition-[opacity,transform] hover:-translate-y-0.5 hover:opacity-85">Find my starting point</a>
-          <a href="/medical-disclaimer" class="inline-flex min-h-12 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">Read the safety approach</a>
-        </div>
-      </div>
-
-      <div class="surface-card relative mx-auto w-full max-w-2xl overflow-hidden p-3 shadow-[0_40px_100px_-50px_rgba(0,0,0,.8)]" aria-label="Preview of the guided recovery experience">
-        <div class="flex items-center border-b border-line px-3 py-3">
-          <div class="flex items-center gap-2">
-            <span class="size-2 rounded-full bg-success"></span>
-            <span class="text-xs font-semibold uppercase tracking-[0.12em] text-subtle">Guided session</span>
-          </div>
-        </div>
-        <div class="grid gap-3 p-2 sm:grid-cols-[0.9fr_1.1fr]">
-          <div class="rounded-xl border border-line bg-canvas p-5">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium text-subtle">Pain finder</span>
-              <span class="text-xs font-semibold text-brand">Model viewer</span>
-            </div>
-            <div class="relative mx-auto mt-6 grid aspect-square max-w-48 place-items-center">
-              <div class="absolute inset-3 rounded-full border border-line"></div>
-              <div class="absolute inset-8 rounded-full border border-line"></div>
-              <div class="absolute inset-14 rounded-full border border-brand/50"></div>
-              <div class="grid size-14 place-items-center rounded-full border border-brand bg-brand/12 text-brand shadow-[0_0_0_12px_color-mix(in_srgb,var(--sf-brand)_8%,transparent)]">
-                <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v5m0 10v5M2 12h5m10 0h5"/></svg>
-              </div>
-            </div>
-            <p class="mt-4 text-center text-sm font-semibold">Rotate. Inspect. Select.</p>
-            <p class="mt-1 text-center text-xs leading-5 text-subtle">Drag, pinch, zoom, pan, or use quick views.</p>
-          </div>
-          <div class="grid gap-3">
-            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
-              <div class="flex items-center justify-between gap-4">
-                <div><p class="text-xs text-subtle">01 · Locate</p><p class="mt-1 text-sm font-semibold">Lower back selected</p></div>
-                <span class="grid size-9 place-items-center rounded-lg border border-brand/40 bg-brand/10 text-brand" aria-hidden="true">✓</span>
-              </div>
-            </div>
-            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
-              <div class="flex items-center justify-between gap-4">
-                <div><p class="text-xs text-subtle">02 · Screen</p><p class="mt-1 text-sm font-semibold">1 question at a time</p></div>
-                <span class="text-xs font-medium tabular-nums text-muted">2 / 5</span>
-              </div>
-              <div class="mt-4 grid grid-cols-5 gap-1"><span class="h-1 rounded-full bg-brand"></span><span class="h-1 rounded-full bg-brand"></span><span class="h-1 rounded-full bg-line"></span><span class="h-1 rounded-full bg-line"></span><span class="h-1 rounded-full bg-line"></span></div>
-            </div>
-            <div class="rounded-xl border border-line bg-surface-raised/45 p-5">
-              <div class="flex items-center justify-between gap-4">
-                <div><p class="text-xs text-subtle">03 · Move</p><p class="mt-1 text-sm font-semibold">Visual and voice guidance</p></div>
-                <span class="font-mono text-lg font-semibold tabular-nums">0:30</span>
-              </div>
-              <div class="mt-4 flex items-center gap-2 text-xs text-muted"><span class="grid size-7 place-items-center rounded-md bg-brand text-white" aria-hidden="true">▶</span><span>Start · Move · Return</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<BaseLayout title={title} description={description}>
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
+  <section class="sf-hero container-shell">
+    <div class="sf-hero-copy"><p class="sf-eyebrow">{tr('A little movement. A better everyday.')}</p><h1>{tr('Make room for')} <span>{tr('comfortable movement.')}</span></h1><p class="sf-lead">{tr('Stiff from sitting? Ready for a gentle reset? Find a short routine that fits your body, your time, and the space you have.')}</p><div class="sf-actions"><a class="sf-button" href={path('/guide/locate/')}>{tr('Find my routine')} <span aria-hidden="true">↗</span></a><a class="sf-button sf-button-secondary" href={path('/exercises/')}>{tr('Browse exercises')}</a></div><p class="sf-small">{tr('Free to use. No account. Move at your own pace.')}</p></div>
+    <div class="sf-hero-panel"><div class="sf-panel-top"><span class="sf-dot"></span>{tr('A break that fits your day')}<span class="sf-tag">5 {tr('min')}</span></div><div class="sf-orbit" aria-hidden="true"><span class="sf-orbit-ring"></span><span class="sf-orbit-ring"></span><span class="sf-orbit-ring"></span><span class="sf-orbit-word">↗</span></div><div class="sf-preview-copy"><p class="sf-eyebrow">{tr('Start small. Stay comfortable.')}</p><h2>{tr('Your next movement break')}</h2><ol class="sf-preview-list"><li><span>01</span>{tr('Choose your area')}</li><li><span>02</span>{tr('Check in with your body')}</li><li><span>03</span>{tr('Follow your routine')}</li></ol></div></div>
   </section>
-
-  <section class="container-shell py-20 sm:py-28">
-    <div class="grid gap-10 lg:grid-cols-[0.72fr_1.28fr]">
-      <div>
-        <p class="text-sm font-semibold text-brand">A calmer flow</p>
-        <h2 class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Safety before stretching.</h2>
-        <p class="mt-4 max-w-md text-pretty leading-7 text-muted">A focused path from “where does it hurt?” to the safest reasonable next step.</p>
-      </div>
-      <div class="grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2">
-        {[
-          ['01', 'Locate precisely', 'Rotate a neutral 3D body and choose a highlighted pain region.'],
-          ['02', 'Compare patterns', 'Review clear, non-diagnostic descriptions and choose the closest fit.'],
-          ['03', 'Screen for safety', 'Answer 5 focused questions, one at a time, with optional voice.'],
-          ['04', 'Follow the right path', 'Begin guided motion, seek an evaluation, or act on an urgent warning.'],
-        ].map(([number, title, copy]) => (
-          <div class="bg-surface p-6">
-            <p class="text-xs font-semibold tabular-nums text-brand">{number}</p>
-            <h3 class="mt-5 font-semibold">{title}</h3>
-            <p class="mt-2 text-sm leading-6 text-muted">{copy}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <section id="pain-finder" class="scroll-mt-20 border-y border-line bg-surface-raised/20 py-16 sm:py-24">
-    <div class="container-shell">
-      <div class="mb-10 text-center">
-        <p class="text-sm font-semibold text-brand">Guide to Stretch</p>
-        <h2 class="mx-auto mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-5xl">Start with the human model.</h2>
-        <p class="mx-auto mt-5 max-w-2xl text-pretty leading-7 text-muted">Choose the area that hurts, compare the closest symptom pattern, and complete a focused safety check.</p>
-      </div>
-      <PainFinder initialStep="finder" locale={locale} client:only="react" />
-    </div>
-  </section>
-
-  <section class="container-shell py-20 sm:py-28">
-    <div class="max-w-2xl">
-      <p class="text-sm font-semibold text-brand">Explore by area</p>
-      <h2 class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">14 clear regions, without overwhelming anatomy.</h2>
-      <p class="mt-4 text-pretty leading-7 text-muted">Each guide explains commonly associated patterns, useful context, and the warning signs that change the next step.</p>
-    </div>
-    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{regions.map((region) => <RegionCard region={region} />)}</div>
-  </section>
-
-  <section class="border-y border-line bg-surface-raised/20 py-20 sm:py-28" aria-labelledby="about-tool-heading">
-    <div class="container-shell">
-      <div class="max-w-3xl">
-        <p class="text-sm font-semibold text-brand">About the tool</p>
-        <h2 id="about-tool-heading" class="mt-3 text-balance text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">Find stretches for the way your body feels today</h2>
-        <p class="mt-5 text-pretty text-lg leading-8 text-muted">stretchesfor is a free starting-point tool for people who want clear movement guidance without sorting through a confusing exercise library. Choose the area that hurts on the interactive body, compare a few plain-language pain patterns, and complete a short safety screen. If gentle movement is a reasonable next step, the tool builds a small routine with visual demonstrations, a timer, dosage guidance, easier options, and optional spoken coaching.</p>
-        <p class="mt-5 text-pretty leading-7 text-muted">Rather than presenting every movement at once, stretchesfor narrows the library from the area and pattern you choose. Each result explains why a routine may fit, what to watch for, and when to stop. Review the instructions before starting, pause whenever needed, or switch to an easier option.</p>
-      </div>
-
-      <div class="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
-        <div>
-          <h3 class="text-xl font-semibold tracking-[-0.025em]">Stretches for common pain areas</h3>
-          <div class="mt-4 space-y-5 leading-7 text-muted">
-            <p>The body guides cover <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-back">stretches for lower back pain</a> and <a class="font-medium text-brand hover:text-brand-hover" href="/body/upper-back">stretches for upper back pain</a>, with low-load movements selected for the part of the back you identify. You can also explore <a class="font-medium text-brand hover:text-brand-hover" href="/body/neck">stretches for neck pain</a> or <a class="font-medium text-brand hover:text-brand-hover" href="/body/shoulder">stretches for shoulder pain</a>. Every guide explains the expected sensation and reminds you that sharp, spreading, electrical, or worsening pain is a reason to stop.</p>
-            <p>For the lower body, use the dedicated guides for <a class="font-medium text-brand hover:text-brand-hover" href="/body/hip">stretches for hip pain</a>, <a class="font-medium text-brand hover:text-brand-hover" href="/body/knee">stretches for knee pain</a>, and <a class="font-medium text-brand hover:text-brand-hover" href="/body/ankle">stretches for ankle pain</a>. The foot guide includes <a class="font-medium text-brand hover:text-brand-hover" href="/body/foot">stretches for foot pain</a> affecting the sole, arch, or toes. People looking for <a class="font-medium text-brand hover:text-brand-hover" href="/body/foot">stretches for heel pain</a> can begin there too, because the guided foot routine includes the plantar fascia, arch, and ankle-control movements.</p>
-            <p>The upper-limb library also offers <a class="font-medium text-brand hover:text-brand-hover" href="/body/elbow">stretches for elbow pain</a> and <a class="font-medium text-brand hover:text-brand-hover" href="/body/wrist">stretches for wrist pain</a>, while the groin guide provides supported <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-abdomen-groin">stretches for groin pain</a>. These pages are educational, not diagnostic: similar symptoms can have different causes, and the safest next step may be professional assessment instead of stretching.</p>
-          </div>
-        </div>
-
-        <div>
-          <h3 class="text-xl font-semibold tracking-[-0.025em]">Guidance for sitting, sleeping, running, and work</h3>
-          <div class="mt-4 space-y-5 leading-7 text-muted">
-            <p>Context matters. If you are searching for <a class="font-medium text-brand hover:text-brand-hover" href="/body/lower-back">stretches for lower back pain after sitting</a>, the tool first checks whether gentle walking or a position change feels comfortable before offering low-load back movements. For <a class="font-medium text-brand hover:text-brand-hover" href="/body/neck">stretches for neck pain from sleeping</a>, it favors small, controlled motion rather than pulling hard on a stiff neck. The same conservative approach applies to <a class="font-medium text-brand hover:text-brand-hover" href="/body/upper-back">stretches for back pain at work</a>, where regular movement breaks may be more useful than forcing one deep stretch.</p>
-            <p>Runners can explore <a class="font-medium text-brand hover:text-brand-hover" href="/body/hip">stretches for hip pain after running</a> or <a class="font-medium text-brand hover:text-brand-hover" href="/body/knee">stretches for knee pain after running</a>. Before a routine appears, the safety questions check for a major injury, rapid worsening, inability to bear weight, unexplained swelling, and other warning signs. This helps separate a gentle self-guided starting point from symptoms that deserve timely care.</p>
-            <p>Each routine stays intentionally short. Instructions explain how to set up, move, and return; timers help you avoid guessing; common-mistake notes discourage forcing range; and easier alternatives make the session adaptable.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-14 grid gap-px overflow-hidden rounded-card border border-line bg-line md:grid-cols-3">
-        <div class="bg-surface p-6">
-          <h3 class="font-semibold">Is stretchesfor a diagnosis?</h3>
-          <p class="mt-3 text-sm leading-6 text-muted">No. It organizes educational patterns and movement options. It cannot identify the cause of pain or replace an examination by a qualified healthcare professional.</p>
-        </div>
-        <div class="bg-surface p-6">
-          <h3 class="font-semibold">When should I avoid stretching?</h3>
-          <p class="mt-3 text-sm leading-6 text-muted">Skip self-guided exercise and seek appropriate care for major trauma, severe or rapidly worsening pain, new weakness or numbness, fever, unexplained swelling, breathing trouble, or loss of normal function.</p>
-        </div>
-        <div class="bg-surface p-6">
-          <h3 class="font-semibold">What about stretches for tailbone pain?</h3>
-          <p class="mt-3 text-sm leading-6 text-muted">Tailbone pain does not currently have a dedicated routine in the tool. Because falls, persistent pain, and symptoms around the pelvis can need individual assessment, use the safety guide rather than choosing an unrelated stretch.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <HomeFaq />
-
+  <section class="sf-section sf-area-section" id="pain-finder"><div class="container-shell"><div class="sf-section-heading"><div><p class="sf-eyebrow">{tr('Start where you feel it')}</p><h2>{tr('What needs a little attention?')}</h2></div><p>{tr('Choose an area for a personal routine, or explore its exercise guide.')}</p></div><div class="sf-area-grid">{regions.filter(r => !['chest', 'abdomen', 'lower-abdomen-groin'].includes(r.id)).map((region, index) => <div class="sf-area-card"><a href={path(`/guide/locate/?region=${region.id}`)}><span class="sf-area-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><strong>{tr(region.name)}</strong><span aria-hidden="true">↗</span></a><a class="sf-area-guide" href={path(`/body/${region.id}/`)}>{tr('Read area guide')}</a></div>)}</div></div></section>
+  <section class="sf-section container-shell"><div class="sf-section-heading"><div><p class="sf-eyebrow">{tr('Good places to begin')}</p><h2>{tr('Small routines for real life')}</h2></div><a class="sf-link" href={path('/routines/')}>{tr('View all routines')} →</a></div><div class="sf-card-grid">{everydayRoutines.slice(0, 3).map((routine, index) => <a class="sf-routine-card" href={path(`/routines/${routine.id}/`)}><span class="sf-card-number" aria-hidden="true">0{index + 1}</span><p class="sf-eyebrow">{tr(index === 0 ? 'Between tasks' : index === 1 ? 'A gentle start' : 'After a long day')}</p><h3>{tr(routine.name)}</h3><p>{tr(routine.description)}</p><span class="sf-link">{tr('Explore routine')} →</span></a>)}</div></section>
+  <section class="sf-section container-shell"><div class="sf-explain"><div><p class="sf-eyebrow">{tr('Guidance, without the guesswork')}</p><h2>{tr('Simple steps. Useful choices.')}</h2><p class="sf-lead">{tr('Every exercise includes clear setup steps, a suggested dose, common mistakes, and an easier option. Your routine starts with a short safety check.')}</p><a class="sf-link" href={path('/medical-disclaimer/')}>{tr('Read the safety approach')} →</a></div><div class="sf-feature-list"><div><span>01</span><div><h3>{tr('Fit your space')}</h3><p>{tr('Choose seated, standing, or floor movements and the support you have nearby.')}</p></div></div><div><span>02</span><div><h3>{tr('Keep it comfortable')}</h3><p>{tr('Use a small range, pause when you need to, and stop if symptoms worsen.')}</p></div></div><div><span>03</span><div><h3>{tr('Build a small habit')}</h3><p>{tr('A short movement break can fit between tasks. You do not need a perfect routine to begin.')}</p></div></div></div></div></section>
+  <section class="sf-section container-shell sf-faq"><p class="sf-eyebrow">{tr('Before you start')}</p><h2>{tr('A few helpful answers')}</h2>{[
+    ['Do I need equipment?', 'Many movements need only a stable chair or a little clear space. Tell the guide what you can use and it will filter your routine.'],
+    ['Can I use this if I have pain?', 'Choose pain or discomfort in the guide to follow the symptom screening pathway. An online guide cannot diagnose the cause or replace an individual assessment.'],
+    ['Do all exercises have pictures?', 'Some exercises include an illustration. Every exercise has written steps, dosage, easier options, and safety notes that you can read before starting.'],
+    ['How long should I stretch?', 'Choose a 3, 5, or 10 minute window. Follow each movement’s suggested dose and keep it comfortable; a shorter routine is fine.'],
+  ].map(([question, answer]) => <details><summary>{tr(question)}</summary><p>{tr(answer)}</p></details>)}</section>
 </BaseLayout>

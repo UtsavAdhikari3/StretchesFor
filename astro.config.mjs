@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 // https://astro.build/config
 export default defineConfig({
   site: 'https://stretchesfor.com',
+  trailingSlash: 'always',
   i18n: {
     locales: ['en', 'es', 'fr', 'de', 'pt'],
     defaultLocale: 'en',

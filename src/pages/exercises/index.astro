@@ -2,16 +2,40 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { exercises } from '../../data/exercises';
-import { getRegion } from '../../data/content';
+import { regions } from '../../data/content';
+import { movementDetails } from '../../data/everydayExercises';
 import { getExercisePath } from '../../lib/exerciseUrls';
-
+import { getLocaleFromPath, localePath, t } from '../../i18n';
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = (s: string) => t(locale, s);
 const title = 'Stretch and Mobility Exercise Library';
-const description = 'Browse step-by-step stretch and mobility exercise guides with demonstrations, suggested doses, common mistakes, easier options, and safety notes.';
-const structuredData = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: title, description, mainEntity: { '@type': 'ItemList', itemListElement: exercises.map((exercise, index) => ({ '@type': 'ListItem', position: index + 1, name: exercise.name, url: new URL(getExercisePath(exercise.id), Astro.site).toString() })) } };
+const description = 'Browse 48 stretch and mobility guides. Find movements by body area, comfortable position, and equipment, with clear instructions and easier options.';
+const structuredData = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: tr(title), description: tr(description), mainEntity: { '@type': 'ItemList', itemListElement: exercises.map((exercise, index) => ({ '@type': 'ListItem', position: index + 1, name: tr(exercise.name), url: new URL(localePath(locale, getExercisePath(exercise.id)), Astro.site).toString() })) } };
 ---
-
 <BaseLayout title={title} description={description} canonicalPath="/exercises/">
   <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
-  <section class="container-shell py-10 sm:py-16"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Exercises' }]} /><div class="mt-10 max-w-3xl"><p class="text-sm font-semibold text-brand">Exercise library</p><h1 class="mt-3 text-balance text-4xl font-semibold tracking-[-0.05em] sm:text-6xl">Stretch and mobility exercise guides</h1><p class="mt-5 text-pretty text-lg leading-8 text-muted">Each guide includes a demonstration, setup steps, suggested dose, common mistakes, easier options, and links into the existing guided player.</p></div></section>
-  <section class="border-y border-line bg-surface-raised/25 py-14 sm:py-20"><div class="container-shell grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{exercises.map((exercise) => <a href={getExercisePath(exercise.id)} class="surface-card group p-6 transition-[border-color,transform,background-color] hover:-translate-y-0.5 hover:border-line-strong hover:bg-surface-raised/40"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{getRegion(exercise.regionId)?.name} guide</p><h2 class="mt-3 text-xl font-semibold tracking-[-0.03em] group-hover:text-brand">{exercise.name}</h2><p class="mt-3 text-sm leading-6 text-muted">{exercise.direction}. {exercise.dose}.</p><span class="mt-5 inline-flex text-sm font-semibold text-brand">View instructions →</span></a>)}</div></section>
+  <section class="sf-section container-shell"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Exercises' }]} /><div class="sf-page-heading"><p class="sf-eyebrow">{tr('Find your next movement')}</p><h1>{tr('The exercise library')}</h1><p class="sf-lead">{tr('48 ways to move more comfortably. Read the steps, find an easier option, and choose what fits today.')}</p><a class="sf-link" href="/guide/locate/">{tr('Want help choosing? Find my routine')} →</a></div>
+  <form class="sf-filters" data-exercise-filters role="search" hidden><label class="sf-search-label">{tr('Search exercises')}<input name="q" type="search" placeholder={tr('Try shoulders or hamstring…')} autocomplete="off" /></label><label>{tr('Body area')}<select name="area"><option value="">{tr('All areas')}</option>{regions.map(r => <option value={r.id}>{tr(r.name)}</option>)}</select></label><label>{tr('Position')}<select name="position"><option value="">{tr('Any position')}</option><option value="seated">{tr('Seated')}</option><option value="standing">{tr('Standing')}</option><option value="floor">{tr('On the floor')}</option></select></label><label>{tr('Equipment')}<select name="equipment"><option value="">{tr('Any equipment')}</option><option value="none">{tr('No equipment')}</option><option value="chair">{tr('Stable chair or table')}</option><option value="wall">{tr('Wall or doorway')}</option><option value="towel">{tr('Towel')}</option></select></label><label>{tr('Movement type')}<select name="category"><option value="">{tr('All movements')}</option><option value="stretch">{tr('Stretch')}</option><option value="mobility">{tr('Mobility')}</option></select></label><button type="reset" class="sf-text-button">{tr('Clear filters')}</button></form>
+  <p class="sf-small" role="status" aria-live="polite"><span data-exercise-count>{exercises.length}</span> {tr('exercises')}</p><p data-no-matches hidden class="sf-note">{tr('No exercises match. Try a different search or clear the filters.')}</p>
+  <div class="sf-card-grid" data-exercise-list>{exercises.map(exercise => { const details = movementDetails(exercise); return <article class="sf-exercise-card" data-exercise-card data-search={`${tr(exercise.name)} ${tr(exercise.feltArea)} ${tr(regions.find(r => r.id === exercise.regionId)?.name ?? '')}`} data-area={exercise.regionId} data-position={details.positions.join(' ')} data-equipment={details.equipment.join(' ') || 'none'} data-category={details.category}><p class="sf-eyebrow">{tr(regions.find(r => r.id === exercise.regionId)?.name ?? '')}</p><h2><a href={getExercisePath(exercise.id)}>{tr(exercise.name)}</a></h2><p>{tr(exercise.direction)}</p><div class="sf-card-footer"><span>{tr(exercise.dose)}</span><span aria-hidden="true">↗</span></div></article>; })}</div></section>
 </BaseLayout>
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-exercise-filters]');
+  const cards = [...document.querySelectorAll<HTMLElement>('[data-exercise-card]')];
+  const keys = ['q', 'area', 'position', 'equipment', 'category'];
+  const normalize = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase();
+  function filter(sync = true) {
+    if (!form) return;
+    const data = new FormData(form);
+    let count = 0;
+    for (const card of cards) {
+      const matches = keys.every(key => { const value = String(data.get(key) ?? ''); return !value || (key === 'q' ? normalize(card.dataset.search ?? '').includes(normalize(value)) : (card.dataset[key] ?? '').split(' ').includes(value)); });
+      card.hidden = !matches; if (matches) count++;
+    }
+    document.querySelector('[data-exercise-count]')!.textContent = String(count);
+    document.querySelector<HTMLElement>('[data-no-matches]')!.hidden = count !== 0;
+    if (sync) { const query = new URLSearchParams(); for (const key of keys) { const value = String(data.get(key) ?? ''); if (value) query.set(key, value); } history.replaceState(null, '', `${location.pathname}${query.size ? `?${query}` : ''}`); }
+  }
+  function restore() { const query = new URLSearchParams(location.search); for (const key of keys) { const input = form?.elements.namedItem(key) as HTMLInputElement | HTMLSelectElement | null; if (input) input.value = query.get(key) ?? ''; } filter(false); }
+  if (form) { form.hidden = false; restore(); form.addEventListener('input', () => filter()); form.addEventListener('submit', event => event.preventDefault()); form.addEventListener('reset', () => setTimeout(() => filter(), 0)); window.addEventListener('popstate', restore); }
+</script>

@@ -21,7 +21,7 @@ export function evaluateAnswers(pattern: PainPattern, answers: AnswerMap): FlowR
   }
 
   const safetyAnswers = [answers.emergency, answers.trauma, answers.systemic, answers.function];
-  if (safetyAnswers.some((answer) => answer === 'unsure') || answers.trauma === 'yes' || answers.systemic === 'yes' || answers.function === 'yes') {
+  if (safetyAnswers.some((answer) => answer !== 'no')) {
     return {
       kind: 'professional',
       title: 'Professional evaluation recommended',

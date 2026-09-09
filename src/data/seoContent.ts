@@ -1,5 +1,6 @@
 import { getRegion, patterns } from './content';
 import { exercises, routines } from './exercises';
+import { everydayRoutines } from './everydayRoutines';
 
 export interface ConditionFaq {
   question: string;
@@ -265,7 +266,8 @@ export const getConditionsForExercise = (exerciseId: string, regionId: string) =
 export function getExerciseSeo(exerciseId: string) {
   const exercise = exercises.find((item) => item.id === exerciseId);
   if (!exercise) return undefined;
-  const routine = routines.find((item) => item.exerciseIds.includes(exercise.id));
+  const routine = routines.find((item) => item.exerciseIds.includes(exercise.id))
+    ?? everydayRoutines.find(item => [...item.exerciseIds, ...item.alternatives].includes(exercise.id));
   const region = getRegion(exercise.regionId);
   const relatedExercises = exercises
     .filter((item) => item.id !== exercise.id && (routine?.exerciseIds.includes(item.id) || item.regionId === exercise.regionId))

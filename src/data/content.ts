@@ -1,4 +1,5 @@
 import type { BodyRegion, Exercise, PainPattern, Question, Routine, Source } from './types';
+import { additionalBlueprints } from './everydayExercises.ts';
 
 const sources = {
   muscle: { title: 'Muscle pain: When to see a doctor', publisher: 'Mayo Clinic', url: 'https://www.mayoclinic.org/symptoms/muscle-pain/basics/when-to-see-doctor/sym-20050866' },
@@ -126,7 +127,7 @@ const exerciseSeeds: Array<[string,string,string,string,string,string,string[],s
 
 export type ExerciseBlueprint = Omit<Exercise, 'sourceRef' | 'expectedSensation' | 'stopConditions'>;
 
-export const exerciseBlueprints: ExerciseBlueprint[] = exerciseSeeds.map(([id,name,regionId,_legacyRegionKey,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier]) => ({ id,name,regionId,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier }));
+export const exerciseBlueprints: ExerciseBlueprint[] = [...exerciseSeeds.map(([id,name,regionId,_legacyRegionKey,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier]) => ({ id,name,regionId,feltArea,direction,instructions,dose,seconds,bilateral,mistakes,easier })), ...additionalBlueprints];
 
 export const routines: Routine[] = [
   ['neck-reset','neck','Neck reset','Three comfortable movements to reduce time spent in one position.',['neck-turn','chin-tuck','open-book']],

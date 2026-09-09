@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { everydayRoutines, type EverydayRoutine } from '../../data/everydayRoutines';
+import { exercises } from '../../data/exercises';
+import { movementDetails } from '../../data/everydayExercises';
+import { exerciseDuration } from '../../lib/routineBuilder';
+import { getExercisePath } from '../../lib/exerciseUrls';
+import { getLocaleFromPath, localePath, t } from '../../i18n';
+export const getStaticPaths = () => everydayRoutines.map(routine => ({ params: { routine: routine.id }, props: { routine } }));
+const { routine } = Astro.props as { routine: EverydayRoutine };
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = (s: string) => t(locale, s);
+const movements = routine.exerciseIds.map(id => exercises.find(e => e.id === id)!);
+const equipment = [...new Set(movements.flatMap(e => movementDetails(e).equipment))];
+const equipmentLabels = { chair: 'Stable chair or table', wall: 'Wall or doorway', towel: 'Towel' };
+const minutes = Math.ceil(movements.reduce((total, e) => total + exerciseDuration(e), 0) / 60);
+const pageUrl = new URL(localePath(locale, `/routines/${routine.id}/`), Astro.site).toString();
+const schema = { '@context': 'https://schema.org', '@graph': [
+  { '@type': 'WebPage', name: tr(routine.name), description: tr(routine.description), url: pageUrl, inLanguage: locale, mainEntity: { '@type': 'ItemList', itemListElement: movements.map((e, i) => ({ '@type': 'ListItem', position: i + 1, name: tr(e.name), url: new URL(localePath(locale, getExercisePath(e.id)), Astro.site).toString() })) } },
+  { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: tr('Home'), item: new URL(localePath(locale, '/'), Astro.site).toString() }, { '@type': 'ListItem', position: 2, name: tr('Routines'), item: new URL(localePath(locale, '/routines/'), Astro.site).toString() }, { '@type': 'ListItem', position: 3, name: tr(routine.name), item: pageUrl }] },
+] };
+---
+<BaseLayout title={routine.name} description={routine.description} canonicalPath={`/routines/${routine.id}/`} ogType="article">
+  <script slot="head" is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />
+  <article class="sf-section container-shell"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Routines', href: '/routines/' }, { label: routine.name }]} /><div class="sf-page-heading"><p class="sf-eyebrow">{tr('Everyday movement')} · ≈ {minutes} {tr('min')}</p><h1>{tr(routine.name)}</h1><p class="sf-lead">{tr(routine.description)}</p><a class="sf-button" href={`/guide/locate/?routine=${routine.id}`}>{tr('Adapt this routine for me')} ↗</a></div>
+  <div class="sf-content-columns"><div><h2>{tr('A comfortable place to start')}</h2><p>{tr(routine.introduction)}</p><h2>{tr('Before you begin')}</h2><p>{tr(routine.preparation)}</p><p class="sf-note">{tr('Start after a little comfortable movement. Keep stretches gentle and stop if symptoms worsen. This routine is educational and does not replace individual care.')}</p><h2>{tr('Your movements')}</h2><ol class="sf-routine-list">{movements.map(e => <li><a class="sf-link" href={getExercisePath(e.id)}>{tr(e.name)} →</a><p>{tr(e.direction)}</p><span>{tr(e.dose)}</span></li>)}</ol><h2>{tr('After your routine')}</h2><p>{tr(routine.afterward)}</p></div><aside><div class="sf-written-guide"><h2>{tr('What you will need')}</h2><ul>{equipment.length ? equipment.map(item => <li>{tr(equipmentLabels[item])}</li>) : <li>{tr('No equipment')}</li>}</ul><p>{tr('The time estimate includes both sides and a short setup break. Pause for longer whenever you need to.')}</p><a class="sf-link" href={`/body/${routine.regionId}/`}>{tr('Read area guide')} →</a></div><h2>{tr('Other options')}</h2><div class="sf-options">{routine.alternatives.slice(0, 4).map(id => { const e = exercises.find(e => e.id === id)!; return <a class="sf-choice" href={getExercisePath(id)}>{tr(e.name)} →</a>; })}</div></aside></div>
+  <div class="sf-section-heading sf-section"><h2>{tr('Explore more routines')}</h2><a class="sf-link" href="/routines/">{tr('View all routines')} →</a></div><div class="sf-card-grid">{everydayRoutines.filter(r => r.id !== routine.id).slice(0, 3).map(r => <a class="sf-routine-card" href={`/routines/${r.id}/`}><h3>{tr(r.name)}</h3><p>{tr(r.description)}</p></a>)}</div></article>
+</BaseLayout>

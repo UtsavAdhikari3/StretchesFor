@@ -1,6 +1,8 @@
 # StretchesFor
 
-StretchesFor is a frontend-only Astro application for exploring non-diagnostic pain patterns, completing deterministic safety checks, and following curated movement routines. It has no login, database, backend, or saved medical profile.
+StretchesFor is a frontend-only Astro application for everyday stiffness and mobility, with 48 exercises and six everyday routines in five languages. A short questionnaire checks safety, then adapts movements to body area, context, time, position, and equipment. It has no login, database, backend, or saved medical profile; current guide progress stays in browser session storage.
+
+See [the refresh and validation notes](docs/refresh-validation.md) for the current guide, SEO checks, and release workflow, and [the exercise media checklist](docs/exercise-media-checklist.md) for the 20 new exercise photos or GIFs. Existing local illustrations remain available. The provider infrastructure described below is retained for curation tools and is not called by the current exercise UI.
 
 ## Free technology stack
 

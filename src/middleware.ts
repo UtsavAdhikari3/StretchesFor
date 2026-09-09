@@ -9,7 +9,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const firstSegment = pathname.split('/').filter(Boolean)[0];
 
   if (!isLocale(firstSegment) && !assetPattern.test(pathname) && !pathname.startsWith('/_')) {
-    return context.redirect(localePath('en', `${pathname}${context.url.search}`), 302);
+    return context.redirect(localePath('en', `${pathname}${context.url.search}`), 301);
   }
 
   const response = await next();

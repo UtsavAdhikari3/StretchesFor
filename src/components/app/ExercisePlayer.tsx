@@ -6,6 +6,7 @@ import { useSpeechGuidance } from './useSpeechGuidance';
 import { getExercisePath } from '../../lib/exerciseUrls';
 import { formatTranslation, localeInfo, localePath, t, type Locale } from '../../i18n';
 import { localizeExercise, localizeRoutine } from '../../i18n/content';
+import { movementDetails } from '../../data/everydayExercises';
 
 interface Props {
   routine: Routine;
@@ -17,26 +18,28 @@ interface Props {
   onVoiceToggle?: () => void;
   onExerciseChange?: (exerciseId: string) => void;
   locale?: Locale;
+  onComplete?: () => void;
 }
 
-export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle, onExerciseChange, locale = 'en' }: Props) {
+export default function ExercisePlayer({ routine, exercises, compact = false, initialExerciseId, voiceEnabled, voiceSupported, onVoiceToggle, onExerciseChange, locale = 'en', onComplete }: Props) {
   const translatedRoutine = useMemo(() => localizeRoutine(locale, routine), [locale, routine]);
   const translatedExercises = useMemo(() => exercises.map((exercise) => localizeExercise(locale, exercise)), [exercises, locale]);
   const ordered = useMemo(() => translatedRoutine.exerciseIds.map((id) => translatedExercises.find((exercise) => exercise.id === id)).filter(Boolean) as Exercise[], [translatedRoutine, translatedExercises]);
   const initialIndex = Math.max(0, ordered.findIndex((exercise) => exercise.id === initialExerciseId));
   const [index, setIndex] = useState(initialIndex);
   const current = ordered[index];
-  const [remaining, setRemaining] = useState(current?.seconds ?? 30);
+  const [remaining, setRemaining] = useState(current ? movementDetails(current).timing.secondsPerSide : 30);
   const [running, setRunning] = useState(false);
   const [side, setSide] = useState<'left' | 'right'>('left');
   const halfwayAnnounced = useRef(false);
-  const speech = useSpeechGuidance(true, localeInfo[locale].speechLang);
+  const speech = useSpeechGuidance(false, localeInfo[locale].speechLang);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const activeVoice = voiceEnabled ?? speech.enabled;
   const activeVoiceSupported = voiceSupported ?? speech.supported;
   const toggleVoice = onVoiceToggle ?? speech.toggle;
 
   useEffect(() => {
-    setRemaining(current?.seconds ?? 30);
+    setRemaining(current ? movementDetails(current).timing.secondsPerSide : 30);
     setRunning(false);
     setSide('left');
     halfwayAnnounced.current = false;
@@ -60,7 +63,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
   }, [running]);
 
   useEffect(() => {
-    if (!running || remaining < 1 || remaining > 5) return;
+    if (!soundEnabled || !running || remaining < 1 || remaining > 5) return;
     const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const context = new AudioContextClass();
@@ -75,10 +78,10 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
     oscillator.start();
     oscillator.stop(context.currentTime + 0.12);
     oscillator.addEventListener('ended', () => void context.close(), { once: true });
-  }, [remaining, running]);
+  }, [remaining, running, soundEnabled]);
 
   useEffect(() => {
-    if (!current || !running || halfwayAnnounced.current || remaining !== Math.floor(current.seconds / 2)) return;
+    if (!current || !running || halfwayAnnounced.current || remaining !== Math.floor(movementDetails(current).timing.secondsPerSide / 2)) return;
     halfwayAnnounced.current = true;
     if (activeVoice) speech.speak(t(locale, 'Halfway. Keep the movement gentle and keep breathing.'));
   }, [remaining, running, current, activeVoice, locale, speech.speak]);
@@ -98,7 +101,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       return;
     }
     if (remaining === 0) {
-      setRemaining(current.seconds);
+      setRemaining(movementDetails(current).timing.secondsPerSide);
       halfwayAnnounced.current = false;
     }
     setRunning(true);
@@ -107,7 +110,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
 
   const chooseSide = (nextSide: 'left' | 'right') => {
     setSide(nextSide);
-    setRemaining(current.seconds);
+    setRemaining(movementDetails(current).timing.secondsPerSide);
     setRunning(false);
     halfwayAnnounced.current = false;
     if (activeVoice) speech.speak(`${t(locale, nextSide === 'left' ? 'Left' : 'Right')}. ${t(locale, 'Set up comfortably before starting the timer.')}`);
@@ -126,7 +129,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       <header className="border-b border-line bg-surface-raised/45 px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0" aria-live="polite"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-brand">{formatTranslation(locale, 'Exercise {current} of {total}', { current: index + 1, total: ordered.length })}</p><h3 className="mt-2 text-balance text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">{current.name}</h3></div>
-          <VoiceToggle enabled={activeVoice} supported={activeVoiceSupported} onToggle={toggleVoice} label="Voice guide" locale={locale} />
+          <div className="sf-pills"><VoiceToggle enabled={activeVoice} supported={activeVoiceSupported} onToggle={toggleVoice} label="Voice guide" locale={locale} /><label><input type="checkbox" checked={soundEnabled} onChange={event => setSoundEnabled(event.target.checked)} />{t(locale, 'Timer sounds')}</label></div>
         </div>
         <div className="mt-5 h-1 overflow-hidden rounded-full bg-line" aria-hidden="true"><div className="h-full rounded-full bg-brand transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${progress}%` }} /></div>
       </header>
@@ -162,7 +165,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
               <div><p className="text-xs font-medium text-subtle">{t(locale, 'Guided timer')}</p><p className="font-mono text-2xl font-semibold tabular-nums">{remaining > 0 ? `0:${String(remaining).padStart(2, '0')}` : t(locale, 'Complete')}</p></div>
               <div className="flex gap-2">
                 <button type="button" onClick={startOrPauseTimer} className="min-h-11 rounded-lg bg-brand px-4 text-sm font-semibold text-white transition-[background-color,opacity] hover:bg-brand-hover">{t(locale, running ? 'Pause timer' : 'Start timer')}</button>
-                <button type="button" onClick={() => { setRemaining(current.seconds); setRunning(false); halfwayAnnounced.current = false; }} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">{t(locale, 'Reset')}</button>
+                <button type="button" onClick={() => { setRemaining(movementDetails(current).timing.secondsPerSide); setRunning(false); halfwayAnnounced.current = false; }} className="min-h-11 rounded-lg border border-line bg-surface px-3 text-sm font-semibold transition-[border-color,background-color] hover:border-line-strong hover:bg-surface-raised">{t(locale, 'Reset')}</button>
               </div>
               <span className="sr-only" aria-live="polite">{remaining === 0 ? t(locale, 'Exercise timer complete.') : ''}</span>
             </div>
@@ -181,7 +184,7 @@ export default function ExercisePlayer({ routine, exercises, compact = false, in
       </div>
 
       <div className="border-t border-danger/30 bg-danger/5 px-5 py-4 text-sm leading-6 text-muted sm:px-7"><strong className="text-danger">{t(locale, 'Stop if pain worsens.')}</strong> {current.stopConditions.join('. ')}.</div>
-      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">{t(locale, 'Previous')}</button><a href={localePath(locale, getExercisePath(current.id))} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">{t(locale, 'Open exercise guide')}</a><button type="button" disabled={index === ordered.length - 1} onClick={() => goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">{t(locale, 'Skip to next')}</button></footer>
+      <footer className="flex items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-7"><button type="button" disabled={index === 0} onClick={() => goTo(index - 1)} className="min-h-11 rounded-lg border border-line px-4 text-sm font-semibold transition-[border-color,opacity] hover:not-disabled:border-line-strong disabled:cursor-not-allowed disabled:opacity-40">{t(locale, 'Previous')}</button><a href={localePath(locale, getExercisePath(current.id))} className="hidden text-sm font-medium text-brand transition-colors hover:text-brand-hover sm:block">{t(locale, 'Open exercise guide')}</a><button type="button" disabled={index === ordered.length - 1 && !onComplete} onClick={() => index === ordered.length - 1 ? onComplete?.() : goTo(index + 1)} className="min-h-11 rounded-lg bg-ink px-4 text-sm font-semibold text-canvas transition-opacity hover:not-disabled:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">{t(locale, index === ordered.length - 1 && onComplete ? 'Finish routine' : 'Skip to next')}</button></footer>
     </section>
   );
 }

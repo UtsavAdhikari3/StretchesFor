@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { everydayRoutines } from '../../data/everydayRoutines';
+import { exercises } from '../../data/exercises';
+import { exerciseDuration } from '../../lib/routineBuilder';
+import { getLocaleFromPath, t } from '../../i18n';
+const locale = getLocaleFromPath(Astro.url.pathname);
+const tr = (s: string) => t(locale, s);
+---
+<BaseLayout title="Everyday stretching routines" description="Explore six gentle routines for desk breaks, morning mobility, neck and shoulders, back after sitting, hips and legs, and hands and wrists.">
+  <section class="sf-section container-shell"><Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: 'Routines' }]} /><div class="sf-page-heading"><p class="sf-eyebrow">{tr('Small routines for real life')}</p><h1>{tr('Make movement part of your day')}</h1><p class="sf-lead">{tr('Start with a familiar moment. Read the movements, then adapt the routine to your time, space, and comfortable positions.')}</p></div><div class="sf-card-grid">{everydayRoutines.map((routine, index) => <a class="sf-routine-card" href={`/routines/${routine.id}/`}><span class="sf-card-number" aria-hidden="true">0{index + 1}</span><p class="sf-eyebrow">≈ {Math.ceil(routine.exerciseIds.reduce((total, id) => total + exerciseDuration(exercises.find(e => e.id === id)!), 0) / 60)} {tr('min')}</p><h2>{tr(routine.name)}</h2><p>{tr(routine.description)}</p><span class="sf-link">{tr('Explore routine')} →</span></a>)}</div></section>
+</BaseLayout>

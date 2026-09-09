@@ -1,0 +1,8 @@
+---
+import Page from '../../routines/[routine].astro';
+import { locales } from '../../../i18n';
+import { everydayRoutines } from '../../../data/everydayRoutines';
+export const getStaticPaths = () => locales.flatMap(locale => everydayRoutines.map(routine => ({ params: { locale, routine: routine.id }, props: { routine } })));
+const { routine } = Astro.props;
+---
+<Page routine={routine} />

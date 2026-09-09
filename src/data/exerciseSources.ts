@@ -1,9 +1,11 @@
 import type { ExerciseSourceReference } from './types';
+import { additionalBlueprints } from './everydayExercises.ts';
 
 // Every local exercise is reviewed explicitly. A null value means that the
 // provider was checked but no media-backed, semantically exact match was found.
 // External names are identity checks only and are never shown to patients.
 export const exerciseSourceManifest: Record<string, ExerciseSourceReference> = {
+  ...Object.fromEntries(additionalBlueprints.map(({ id }) => [id, ref()])),
   'chin-tuck': ref(),
   'neck-turn': ref(null, 'x2chWLO', [], ['neck side stretch']),
   'shoulder-pendulum': ref(),
